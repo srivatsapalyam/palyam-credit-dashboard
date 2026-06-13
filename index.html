@@ -51,7 +51,7 @@
                         </div>
                         <div>
                             <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Qty</label>
-                            <input type="number" id="q-qty" placeholder="1" min="1" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none text-center">
+                            <input type="number" id="q-qty" value="1" min="1" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none text-center font-bold">
                         </div>
                     </div>
                     <button onclick="addToQuote()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors mt-2">
@@ -152,84 +152,4 @@
 
     <script>
         const formatMoney = (amt) => '₹' + parseFloat(amt).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-        const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-        document.getElementById('header-date').innerText = dateStr;
-
-        // --- STATE ---
-        let currentQuote = [];
-        let discount = { type: 'none', val: 0 }; // type: percent, flat, none
-        let historyLog = JSON.parse(localStorage.getItem('palyam_history')) || [];
-
-        // --- NAVIGATION ---
-        function switchTab(tab) {
-            ['view-estimator', 'view-history'].forEach(id => document.getElementById(id).classList.add('tab-hidden'));
-            ['nav-estimator', 'nav-history'].forEach(id => document.getElementById(id).className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all");
-            
-            document.getElementById(`view-${tab}`).classList.remove('tab-hidden');
-            const btn = document.getElementById(`nav-${tab}`);
-            btn.className = "flex-1 py-4 text-xs font-bold text-blue-400 border-t-2 border-blue-500 transition-all";
-            document.getElementById('header-subtitle').innerText = tab === 'estimator' ? 'Official Estimator' : 'Analytics & Log';
-
-            if(tab === 'history') renderHistory();
-        }
-
-        // --- ESTIMATOR LOGIC ---
-        function addToQuote() {
-            const name = document.getElementById('q-name').value.trim();
-            const cost = parseFloat(document.getElementById('q-cost').value) || 0;
-            const price = parseFloat(document.getElementById('q-price').value);
-            const qty = parseInt(document.getElementById('q-qty').value);
-
-            if (!name || isNaN(price) || isNaN(qty)) { alert("Description, Selling Price, and Qty are required."); return; }
-            if (price < cost) { alert("Warning: Selling price is lower than wholesale cost."); }
-
-            currentQuote.push({ id: Date.now(), name, cost, price, qty });
-            
-            document.getElementById('q-name').value = '';
-            document.getElementById('q-cost').value = '';
-            document.getElementById('q-price').value = '';
-            document.getElementById('q-qty').value = '';
-            document.getElementById('q-name').focus();
-            
-            updateEngine();
-        }
-
-        function remove(id) { currentQuote = currentQuote.filter(i => i.id !== id); updateEngine(); }
-        function clearQuote() { if(confirm('Clear entire estimate?')) { currentQuote = []; discount = {type:'none', val:0}; updateEngine(); } }
-
-        function applyDiscount(type, val) {
-            if (type === 'flat') {
-                val = parseFloat(prompt("Enter flat discount amount (₹):", "0"));
-                if (isNaN(val) || val < 0) return;
-            }
-            discount = { type, val };
-            updateEngine();
-        }
-
-        // Calculates all math and updates UI
-        function updateEngine() {
-            let subtotal = 0; let totalCost = 0;
-            
-            // Build List UI
-            const list = document.getElementById('quote-list'); list.innerHTML = '';
-            if (currentQuote.length === 0) list.innerHTML = `<div class="text-center py-4 border border-dashed border-zinc-800 rounded-xl"><p class="text-xs text-zinc-600 italic">No items added yet.</p></div>`;
-            
-            currentQuote.forEach(item => {
-                const linePrice = item.price * item.qty;
-                subtotal += linePrice; totalCost += (item.cost * item.qty);
-                list.innerHTML += `
-                <div class="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-800">
-                    <div class="space-y-1">
-                        <p class="text-sm font-semibold text-zinc-100">${item.name}</p>
-                        <p class="text-[11px] text-zinc-500 tracking-wide">${item.qty} units × ${formatMoney(item.price)}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <p class="text-sm font-bold text-zinc-200">${formatMoney(linePrice)}</p>
-                        <button onclick="remove(${item.id})" class="text-zinc-600 hover:text-red-400 font-bold px-2">×</button>
-                    </div>
-                </div>`;
-            });
-
-            // Calculate Discount
-            let discountAmt = 0;
-            if (discount.type === 'percent') discountAmt = subtotal * (discount.
+        const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day:
