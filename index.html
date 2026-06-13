@@ -3,303 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palyam Enterprises - Command Center</title>
+    <title>Palyam Enterprises - Estimator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-        .tab-hidden { display: none !important; }
-        input[type="date"] { color-scheme: dark; }
+        ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 2px; }
+        /* Hide number input arrows for a cleaner look */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-50 font-sans antialiased min-h-screen relative pb-24">
+<body class="bg-zinc-950 text-zinc-50 font-sans antialiased min-h-screen">
 
-    <header class="border-b border-zinc-800 bg-zinc-900/90 sticky top-0 backdrop-blur-md px-4 py-4 z-40">
-        <div class="max-w-md mx-auto flex justify-between items-center">
+    <header class="bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-50 px-4 py-4 shadow-sm">
+        <div class="max-w-md mx-auto flex items-center justify-between">
             <div>
-                <h1 class="text-sm font-bold tracking-wider uppercase text-zinc-400">Palyam Enterprises</h1>
-                <p id="header-subtitle" class="text-xs text-zinc-500">Receivables & Credit</p>
+                <h1 class="text-sm font-black tracking-widest uppercase text-blue-500">Palyam Enterprises</h1>
+                <p class="text-xs text-zinc-400 font-medium tracking-wide mt-0.5">Official Estimator Tool</p>
             </div>
-            <button onclick="window.location.reload(true)" class="inline-flex items-center rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-300 border border-zinc-700 active:bg-zinc-700">
-                ↻ Sync
-            </button>
+            <div class="text-right">
+                <p class="text-[10px] text-zinc-500 uppercase tracking-wider">Date</p>
+                <p class="text-xs font-bold text-zinc-300" id="header-date">--</p>
+            </div>
         </div>
     </header>
 
-    <main class="w-full">
-        <div id="view-receivables" class="max-w-md mx-auto px-4 mt-6 space-y-6">
-            <section class="grid grid-cols-2 gap-3">
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Outstanding</p>
-                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-total">₹0</p>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Avg DSO</p>
-                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-dso">0 Days</p>
-                </div>
-            </section>
+    <main class="max-w-md mx-auto px-4 py-6 space-y-6">
+
+        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg shadow-black/50 space-y-4 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-blue-400"></div>
             
-            <section class="space-y-3">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Contractor Ledger</h2>
-                    <button onclick="openCreditModal()" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
-                        + Add Client
-                    </button>
-                </div>
-                <div id="contractor-list" class="space-y-2.5"></div>
-            </section>
-        </div>
-
-        <div id="view-inventory" class="max-w-md mx-auto px-4 mt-6 space-y-6 tab-hidden">
-            <section class="grid grid-cols-2 gap-3">
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Stock Alerts</p>
-                    <p class="text-xl font-bold mt-1 text-red-400" id="kpi-alerts">0 Items</p>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Capital in Stock</p>
-                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-capital">₹0</p>
-                </div>
-            </section>
+            <h2 class="text-sm font-bold tracking-wide text-zinc-100 flex items-center gap-2">
+                <span class="bg-blue-500/20 text-blue-400 rounded bg-opacity-20 px-1.5 py-0.5 text-xs">1</span>
+                Add Line Item
+            </h2>
             
-            <section class="space-y-3">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Inventory Monitor</h2>
-                    <button onclick="openInventoryModal()" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
-                        + Add Stock
-                    </button>
-                </div>
-                <div id="inventory-list" class="space-y-2.5"></div>
-            </section>
-        </div>
-
-        <div id="view-quote" class="max-w-md mx-auto px-4 mt-6 space-y-6 tab-hidden">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-4">
-                <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400 border-b border-zinc-800 pb-2">Draft Customer Quote</h2>
-                
-                <div class="flex gap-2">
-                    <input type="text" id="quote-item-name" placeholder="Item Name" class="flex-[3] min-w-0 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
-                    <input type="number" id="quote-item-cost" placeholder="₹ Price" min="0" class="flex-[2] min-w-0 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500 text-center">
-                    <input type="number" id="quote-item-qty" placeholder="Qty" min="1" class="flex-[1] min-w-0 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500 text-center">
-                    <button onclick="addToQuote()" class="bg-zinc-100 text-zinc-950 font-bold px-3 rounded hover:bg-zinc-200">
-                        +
-                    </button>
-                </div>
-
-                <div id="quote-list" class="space-y-2 pt-2 min-h-[100px]">
-                    <p class="text-center text-xs text-zinc-600 italic pt-4">No items added to quote yet.</p>
-                </div>
-
-                <div class="flex justify-between items-end border-t border-zinc-800 pt-3">
-                    <span class="text-sm font-medium text-zinc-400">Grand Total</span>
-                    <span class="text-xl font-bold text-zinc-100" id="quote-total">₹0</span>
-                </div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+            <div class="space-y-3">
                 <div>
-                    <label class="text-xs text-zinc-400">Customer WhatsApp Number</label>
-                    <input type="tel" id="quote-customer-phone" placeholder="e.g. 9876543210" class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
+                    <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Item Description</label>
+                    <input type="text" id="quote-item-name" placeholder="e.g. Ramco Cement 50kg" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700">
                 </div>
-                <button onclick="sendQuoteWhatsApp()" class="w-full bg-zinc-100 text-zinc-950 text-sm font-bold py-3 rounded flex justify-center items-center gap-2 hover:bg-zinc-200">
-                    Send Professional Quote
-                </button>
-                <button onclick="clearQuote()" class="w-full text-zinc-500 text-xs font-semibold py-2 hover:text-red-400 transition-colors">
-                    Clear Quote Data
+                
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Unit Price (₹)</label>
+                        <input type="number" id="quote-item-cost" placeholder="0.00" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Quantity</label>
+                        <input type="number" id="quote-item-qty" placeholder="1" min="1" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700 text-center">
+                    </div>
+                </div>
+
+                <button onclick="addToQuote()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-blue-900/20 mt-2">
+                    + Add to Estimate
                 </button>
             </div>
-        </div>
+        </section>
+
+        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg shadow-black/50 space-y-4">
+            <div class="flex justify-between items-end border-b border-zinc-800 pb-3">
+                <h2 class="text-sm font-bold tracking-wide text-zinc-100 flex items-center gap-2">
+                    <span class="bg-blue-500/20 text-blue-400 rounded bg-opacity-20 px-1.5 py-0.5 text-xs">2</span>
+                    Current Estimate
+                </h2>
+                <button onclick="clearQuote()" class="text-xs font-semibold text-zinc-500 hover:text-red-400 transition-colors">Clear All</button>
+            </div>
+
+            <div id="quote-list" class="space-y-3 min-h-[80px]">
+                </div>
+
+            <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex justify-between items-center mt-4">
+                <span class="text-xs font-bold uppercase tracking-widest text-zinc-400">Grand Total</span>
+                <span class="text-2xl font-black text-blue-400" id="quote-total">₹0</span>
+            </div>
+        </section>
+
+        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg shadow-black/50 space-y-4">
+            <h2 class="text-sm font-bold tracking-wide text-zinc-100 flex items-center gap-2">
+                <span class="bg-blue-500/20 text-blue-400 rounded bg-opacity-20 px-1.5 py-0.5 text-xs">3</span>
+                Send to Customer
+            </h2>
+            
+            <div>
+                <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Customer WhatsApp No.</label>
+                <div class="flex mt-1">
+                    <span class="bg-zinc-800 border border-zinc-700 border-r-0 rounded-l-xl px-3 py-3 text-sm text-zinc-400 flex items-center">+91</span>
+                    <input type="tel" id="quote-customer-phone" placeholder="98765 43210" class="w-full bg-zinc-950 border border-zinc-700 rounded-r-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700">
+                </div>
+            </div>
+            
+            <button onclick="sendQuoteWhatsApp()" class="w-full bg-zinc-100 hover:bg-white text-zinc-950 text-sm font-black py-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                Send via WhatsApp
+            </button>
+        </section>
+
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full bg-zinc-950 border-t border-zinc-800 z-50">
-        <div class="max-w-md mx-auto flex justify-around">
-            <button onclick="switchTab('receivables')" id="nav-receivables" class="flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all">
-                💰 Credit
-            </button>
-            <button onclick="switchTab('inventory')" id="nav-inventory" class="flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all">
-                📦 Inventory
-            </button>
-            <button onclick="switchTab('quote')" id="nav-quote" class="flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all">
-                📝 Quote
-            </button>
-        </div>
-    </nav>
-
-    <div id="credit-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex justify-center items-center px-4">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <h3 class="text-lg font-bold text-zinc-100 border-b border-zinc-800 pb-2">Add New Credit Account</h3>
-            <form onsubmit="addContractor(event)" class="space-y-3">
-                <div><label class="text-xs text-zinc-400">Business Name</label><input type="text" id="c-name" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-xs text-zinc-400">Amount (₹)</label><input type="number" id="c-amount" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                    <div><label class="text-xs text-zinc-400">Date of Purchase</label><input type="date" id="c-date" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-xs text-zinc-400">Limit (₹)</label><input type="number" id="c-limit" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                    <div><label class="text-xs text-zinc-400">Phone No.</label><input type="tel" id="c-phone" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                </div>
-                <div class="flex gap-3 pt-3">
-                    <button type="button" onclick="closeModal('credit-modal')" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold hover:bg-zinc-800">Cancel</button>
-                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold hover:bg-zinc-200">Save Account</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="inventory-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex justify-center items-center px-4">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <h3 id="inv-modal-title" class="text-lg font-bold text-zinc-100 border-b border-zinc-800 pb-2">Add / Edit Inventory</h3>
-            <form onsubmit="saveInventory(event)" class="space-y-3">
-                <input type="hidden" id="i-id">
-                <div><label class="text-xs text-zinc-400">Item Name</label><input type="text" id="i-name" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-xs text-zinc-400">Current Stock</label><input type="number" id="i-current" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                    <div><label class="text-xs text-zinc-400">Reorder Point</label><input type="number" id="i-reorder" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-xs text-zinc-400">Supplier Name</label><input type="text" id="i-supplier" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                    <div><label class="text-xs text-zinc-400">Unit Cost (₹)</label><input type="number" id="i-cost" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                </div>
-                <div><label class="text-xs text-zinc-400">Supplier Phone (For WhatsApp)</label><input type="tel" id="i-phone" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                <div class="flex gap-3 pt-3">
-                    <button type="button" onclick="closeModal('inventory-modal')" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold hover:bg-zinc-800">Cancel</button>
-                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold hover:bg-zinc-200">Save Stock</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
+        // Set today's date in header
+        const options = { weekday: 'short', month: 'short', day: 'numeric' };
+        document.getElementById('header-date').innerText = new Date().toLocaleDateString('en-IN', options);
+
+        // Formatting Utility
         const formatMoney = (amt) => '₹' + parseInt(amt).toLocaleString('en-IN');
-        
-        function calculateDaysPending(dateString) {
-            const purchaseDate = new Date(dateString);
-            const today = new Date();
-            purchaseDate.setHours(0, 0, 0, 0);
-            today.setHours(0, 0, 0, 0);
-            const diffTime = today - purchaseDate;
-            return diffTime < 0 ? 0 : Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        }
 
-        function getTodayString() {
-            const today = new Date();
-            return today.toISOString().split('T')[0];
-        }
-
-        // ================= TAB NAVIGATION =================
-        function switchTab(tab) {
-            ['view-receivables', 'view-inventory', 'view-quote'].forEach(id => {
-                document.getElementById(id).classList.add('tab-hidden');
-            });
-            ['nav-receivables', 'nav-inventory', 'nav-quote'].forEach(id => {
-                document.getElementById(id).className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all";
-            });
-
-            document.getElementById(`view-${tab}`).classList.remove('tab-hidden');
-            document.getElementById(`nav-${tab}`).className = "flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all";
-
-            const subtitles = {
-                'receivables': 'Receivables & Credit',
-                'inventory': 'Supply & Stock Alerts',
-                'quote': 'Instant Estimator'
-            };
-            document.getElementById('header-subtitle').innerText = subtitles[tab];
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function openCreditModal() {
-            document.getElementById('c-date').value = getTodayString();
-            openModal('credit-modal');
-        }
-
-        // ================= DATA LOADING =================
-        let creditData = [];
-        let invData = [];
+        // State Management
         let currentQuote = []; 
-        
-        try { creditData = JSON.parse(localStorage.getItem('palyam_credit')) || []; } catch(e) { creditData = []; }
-        try { invData = JSON.parse(localStorage.getItem('palyam_inventory')) || []; } catch(e) { invData = []; }
-
-        // ================= RECEIVABLES & INVENTORY =================
-        function renderCredit() {
-            const list = document.getElementById('contractor-list');
-            list.innerHTML = ''; let total = 0; let totalDays = 0;
-            if (creditData.length === 0) { list.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No accounts found.</div>`; } 
-            else {
-                creditData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(item => {
-                    const daysPending = calculateDaysPending(item.date);
-                    total += parseInt(item.amount); totalDays += daysPending;
-                    let status = "Current"; let color = "text-zinc-400 bg-zinc-900 border-zinc-800";
-                    if (item.amount >= item.limit || daysPending >= 30) { status = "Critical"; color = "text-red-400 bg-red-950/30 border-red-900/50"; }
-                    else if (daysPending >= 15) { status = "Overdue"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; }
-                    const displayDate = new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-                    list.innerHTML += `<div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3 relative"><button onclick="deleteCredit(${item.id})" class="absolute top-2 right-3 text-zinc-600 hover:text-red-400 text-xl font-bold px-2">×</button><div class="flex justify-between items-start pr-8"><div><h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3><p class="text-xs text-zinc-500">${daysPending} days pending <span class="text-zinc-700 mx-1">•</span> <span class="text-zinc-600">${displayDate}</span></p></div><div class="text-right"><p class="text-sm font-bold text-zinc-200">${formatMoney(item.amount)}</p><span class="text-[10px] font-mono px-2 py-0.5 rounded border ${color}">${status}</span></div></div><div class="flex gap-2 pt-2 border-t border-zinc-800"><button onclick="pingWhatsApp('${item.phone}', 'Reminder: ₹${item.amount} from your purchase on ${displayDate} has been pending for ${daysPending} days.')" class="flex-1 bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">Ping WhatsApp</button></div></div>`;
-                });
-            }
-            document.getElementById('kpi-total').innerText = formatMoney(total);
-            document.getElementById('kpi-dso').innerText = creditData.length ? Math.round(totalDays / creditData.length) + ' Days' : '0 Days';
-        }
-
-        function addContractor(e) {
-            e.preventDefault();
-            creditData.unshift({ id: Date.now(), name: document.getElementById('c-name').value, amount: document.getElementById('c-amount').value, date: document.getElementById('c-date').value, limit: document.getElementById('c-limit').value, phone: document.getElementById('c-phone').value });
-            localStorage.setItem('palyam_credit', JSON.stringify(creditData)); e.target.reset(); closeModal('credit-modal'); renderCredit();
-        }
-
-        function deleteCredit(id) { if(confirm('Are you sure you want to clear this account?')) { creditData = creditData.filter(i => i.id !== id); localStorage.setItem('palyam_credit', JSON.stringify(creditData)); renderCredit(); } }
-
-        function renderInventory() {
-            const list = document.getElementById('inventory-list');
-            list.innerHTML = ''; let alerts = 0; let capital = 0;
-            if (invData.length === 0) { list.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No inventory found.</div>`; } 
-            else {
-                [...invData].sort((a, b) => (a.current - a.reorder) - (b.current - b.reorder)).forEach(item => {
-                    capital += (parseInt(item.current) * parseInt(item.cost));
-                    let status = "In Stock"; let color = "text-emerald-400 bg-emerald-950/30 border-emerald-900/50";
-                    if (item.current <= 0) { status = "Out of Stock"; color = "text-red-400 bg-red-950/30 border-red-900/50"; alerts++; }
-                    else if (item.current <= item.reorder) { status = "Low Stock"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; alerts++; }
-
-                    list.innerHTML += `<div class="bg-zinc-900 border ${item.current <= 0 ? 'border-red-900/50' : 'border-zinc-800'} rounded-lg p-4 space-y-3 relative"><button onclick="deleteInventory(${item.id})" class="absolute top-2 right-3 text-zinc-600 hover:text-red-400 text-xl font-bold px-2">×</button><div class="flex justify-between items-start pr-8"><div><h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3><p class="text-xs text-zinc-500 mt-0.5">Supplier: ${item.supplier}</p></div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-mono px-2 py-0.5 rounded border ${color}">${status}</span><button onclick="openInventoryModal(${item.id})" class="text-xs text-blue-400 font-medium hover:underline px-2">Edit Stock</button></div></div><div class="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded border border-zinc-800/50"><span>Current: ${item.current}</span><span>Reorder Pt: ${item.reorder}</span></div>${item.current <= item.reorder ? `<button onclick="pingWhatsApp('${item.phone}', 'Hello ${item.supplier}, we need to urgently reorder: ${item.name}. Please confirm dispatch.')" class="w-full bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">WhatsApp Supplier</button>` : ''}</div>`;
-                });
-            }
-            document.getElementById('kpi-alerts').innerText = alerts + ' Items'; document.getElementById('kpi-capital').innerText = formatMoney(capital);
-        }
-
-        function openInventoryModal(id = null) {
-            const form = document.querySelector('#inventory-modal form');
-            if (id) { const item = invData.find(i => i.id === id); document.getElementById('i-id').value = item.id; document.getElementById('i-name').value = item.name; document.getElementById('i-current').value = item.current; document.getElementById('i-reorder').value = item.reorder; document.getElementById('i-supplier').value = item.supplier; document.getElementById('i-cost').value = item.cost; document.getElementById('i-phone').value = item.phone; document.getElementById('inv-modal-title').innerText = "Edit Stock Levels"; } 
-            else { form.reset(); document.getElementById('i-id').value = ''; document.getElementById('inv-modal-title').innerText = "Add New Inventory Item"; }
-            openModal('inventory-modal');
-        }
-
-        function saveInventory(e) {
-            e.preventDefault(); const id = document.getElementById('i-id').value;
-            const newItem = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('i-name').value, current: parseInt(document.getElementById('i-current').value), reorder: parseInt(document.getElementById('i-reorder').value), supplier: document.getElementById('i-supplier').value, cost: parseInt(document.getElementById('i-cost').value), phone: document.getElementById('i-phone').value };
-            if (id) { invData = invData.map(i => i.id === parseInt(id) ? newItem : i); } else { invData.push(newItem); }
-            localStorage.setItem('palyam_inventory', JSON.stringify(invData)); closeModal('inventory-modal'); renderInventory();
-        }
-
-        function deleteInventory(id) { if(confirm('Are you sure you want to delete this inventory item?')) { invData = invData.filter(i => i.id !== id); localStorage.setItem('palyam_inventory', JSON.stringify(invData)); renderInventory(); } }
-
-        function pingWhatsApp(phone, msg) { let p = phone; if (!p.startsWith('91') && p.length === 10) p = '91' + p; window.open(`https://api.whatsapp.com/send?phone=${p}&text=${encodeURIComponent(msg)}`, '_blank'); }
-
-        // ================= MANUAL QUOTE ESTIMATOR LOGIC =================
 
         function addToQuote() {
             const nameInput = document.getElementById('quote-item-name').value.trim();
             const costInput = parseFloat(document.getElementById('quote-item-cost').value);
             const qtyInput = parseInt(document.getElementById('quote-item-qty').value);
             
-            if (!nameInput) {
-                alert("Please enter the item name.");
-                return;
-            }
-            if (isNaN(costInput) || costInput < 0 || isNaN(qtyInput) || qtyInput <= 0) {
-                alert("Please enter a valid price and quantity.");
-                return;
-            }
+            if (!nameInput) { alert("Please enter an item description."); return; }
+            if (isNaN(costInput) || costInput < 0) { alert("Please enter a valid price."); return; }
+            if (isNaN(qtyInput) || qtyInput <= 0) { alert("Please enter a valid quantity."); return; }
             
             currentQuote.push({
                 id: Date.now(),
@@ -308,10 +128,11 @@
                 qty: qtyInput
             });
             
-            // Clear inputs for the next item
+            // Clear inputs and refocus on name for rapid entry
             document.getElementById('quote-item-name').value = '';
             document.getElementById('quote-item-cost').value = '';
             document.getElementById('quote-item-qty').value = '';
+            document.getElementById('quote-item-name').focus();
             
             renderQuoteUI();
         }
@@ -322,9 +143,9 @@
         }
 
         function clearQuote() {
-            if(confirm('Are you sure you want to clear this entire quote?')) {
+            if(currentQuote.length === 0) return;
+            if(confirm('Clear the current estimate?')) {
                 currentQuote = [];
-                document.getElementById('quote-customer-phone').value = '';
                 renderQuoteUI();
             }
         }
@@ -335,21 +156,23 @@
             let grandTotal = 0;
 
             if (currentQuote.length === 0) {
-                list.innerHTML = `<p class="text-center text-xs text-zinc-600 italic pt-4">No items added to quote yet.</p>`;
+                list.innerHTML = `<div class="text-center py-6 border border-dashed border-zinc-800 rounded-xl"><p class="text-xs text-zinc-600 italic">No items added yet.</p></div>`;
             } else {
                 currentQuote.forEach((item, index) => {
                     const lineTotal = item.cost * item.qty;
                     grandTotal += lineTotal;
                     
                     list.innerHTML += `
-                    <div class="flex justify-between items-center bg-zinc-950 p-2 rounded border border-zinc-800 relative">
-                        <div class="space-y-0.5">
-                            <p class="text-xs font-semibold text-zinc-100">${index + 1}. ${item.name}</p>
-                            <p class="text-[10px] text-zinc-500">${item.qty} units x ${formatMoney(item.cost)}</p>
+                    <div class="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-800 relative group">
+                        <div class="space-y-1">
+                            <p class="text-sm font-semibold text-zinc-100">${item.name}</p>
+                            <p class="text-[11px] text-zinc-500 tracking-wide">${item.qty} units × ${formatMoney(item.cost)}</p>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-4">
                             <p class="text-sm font-bold text-zinc-200">${formatMoney(lineTotal)}</p>
-                            <button onclick="removeFromQuote(${item.id})" class="text-zinc-600 hover:text-red-400 font-bold px-1">×</button>
+                            <button onclick="removeFromQuote(${item.id})" class="text-zinc-600 hover:text-red-400 font-bold p-1 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
                         </div>
                     </div>`;
                 });
@@ -360,17 +183,22 @@
 
         function sendQuoteWhatsApp() {
             if (currentQuote.length === 0) {
-                alert("Please add items to the quote first.");
+                alert("Please add items to the estimate before sending.");
                 return;
             }
 
-            const phone = document.getElementById('quote-customer-phone').value;
-            if (!phone) {
-                alert("Please enter the customer's WhatsApp number.");
+            let phone = document.getElementById('quote-customer-phone').value.replace(/\D/g,''); // Strip non-numbers
+            if (!phone || phone.length < 10) {
+                alert("Please enter a valid 10-digit WhatsApp number.");
                 return;
             }
 
-            let message = `*PALYAM ENTERPRISES*\n_Hardware & Supply Estimate_\n------------------------\n\n`;
+            // Generate a random 4-digit Estimate ID
+            const estId = Math.floor(1000 + Math.random() * 9000);
+            const dateStr = new Date().toLocaleDateString('en-IN');
+
+            let message = `*PALYAM ENTERPRISES*\n_Hardware & Supply Estimate_\n`;
+            message += `Est ID: #EST-${estId}\nDate: ${dateStr}\n------------------------\n\n`;
             
             let grandTotal = 0;
             currentQuote.forEach((item, index) => {
@@ -381,18 +209,17 @@
             });
             
             message += `------------------------\n`;
-            message += `*Total Estimate: ${formatMoney(grandTotal)}*\n\n`;
-            message += `_Please let us know if you would like to proceed with this order. Thank you!_`;
+            message += `*GRAND TOTAL: ${formatMoney(grandTotal)}*\n\n`;
+            message += `_This is a digitally generated estimate. Please reply to this message to confirm your order._`;
 
-            pingWhatsApp(phone, message);
+            // Format phone for India code if not present
+            if (!phone.startsWith('91') && phone.length === 10) phone = '91' + phone;
+
+            window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
         }
 
-        // Boot app
-        window.onload = () => {
-            renderCredit();
-            renderInventory();
-            renderQuoteUI(); // Initialize empty quote UI
-        };
+        // Initialize empty state
+        window.onload = renderQuoteUI;
     </script>
 </body>
 </html>
