@@ -56,7 +56,9 @@
         <section class="space-y-3">
             <div class="flex justify-between items-center">
                 <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Contractor Accounts</h2>
-                <span class="text-xs text-zinc-500" id="account-count">0 accounts</span>
+                <button onclick="openModal()" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
+                    + Add
+                </button>
             </div>
             
             <div id="contractor-list" class="space-y-2.5">
@@ -65,9 +67,47 @@
 
     </main>
 
+    <div id="add-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center px-4">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-md p-5 space-y-4">
+            <h3 class="text-lg font-bold text-zinc-100 border-b border-zinc-800 pb-2">Add New Credit Account</h3>
+            
+            <form id="add-form" onsubmit="addContractor(event)" class="space-y-3">
+                <div>
+                    <label class="text-xs text-zinc-400">Contractor / Business Name</label>
+                    <input type="text" id="form-name" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-zinc-400">Amount Owed (₹)</label>
+                        <input type="number" id="form-amount" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-400">Days Pending</label>
+                        <input type="number" id="form-days" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-zinc-400">Credit Limit (₹)</label>
+                        <input type="number" id="form-limit" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-400">Phone Number</label>
+                        <input type="tel" id="form-phone" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 pt-3">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold">Save Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Core ledger data representing the financial state of the accounts
-        let contractors = [
+        // Default data if the app is opened for the very first time
+        const defaultContractors = [
             { id: 1, name: "Srivatsa Builders", outstanding: 45000, agingDays: 32, creditLimit: 50000, status: "Overdue", phone: "919876543210" },
             { id: 2, name: "Ramesh Plumbing", outstanding: 12000, agingDays: 15, creditLimit: 20000, status: "Current", phone: "919876543211" },
             { id: 3, name: "Kushalnagar Constructions", outstanding: 28000, agingDays: 46, creditLimit: 30000, status: "Critical", phone: "919876543212" },
@@ -75,18 +115,26 @@
             { id: 5, name: "Bhoomi Enterprises", outstanding: 25000, agingDays: 22, creditLimit: 25000, status: "Critical", phone: "919876543214" }
         ];
 
+        // LOAD DATA from phone memory (localStorage), or use defaults
+        let contractors = JSON.parse(localStorage.getItem('palyam_contractors')) || defaultContractors;
+
         let currentFilter = 'all';
         let expandedId = null;
 
-        // Formats financial numbers into standard localization layout
+        // SAVE DATA to phone memory
+        function saveContractors() {
+            localStorage.setItem('palyam_contractors', JSON.stringify(contractors));
+        }
+
+        // Formats financial numbers
         function formatCurrency(amount) {
             return '₹' + amount.toLocaleString('en-IN');
         }
 
-        // Calculates high-level performance and tracking metrics dynamically
+        // Calculates metrics dynamically
         function updateKPIs() {
             const total = contractors.reduce((sum, item) => sum + item.outstanding, 0);
-            const avgDso = Math.round(contractors.reduce((sum, item) => sum + item.agingDays, 0) / contractors.length);
+            const avgDso = contractors.length > 0 ? Math.round(contractors.reduce((sum, item) => sum + item.agingDays, 0) / contractors.length) : 0;
             
             document.getElementById('kpi-total').innerText = formatCurrency(total);
             document.getElementById('kpi-dso').innerText = `${avgDso} Days`;
@@ -99,8 +147,6 @@
 
         function filterContractors(filterType) {
             currentFilter = filterType;
-            
-            // Manage toggle button styles manually to keep layout lightning fast
             ['all', 'overdue', 'critical'].forEach(type => {
                 const btn = document.getElementById(`btn-${type}`);
                 if (type === filterType.toLowerCase()) {
@@ -109,28 +155,77 @@
                     btn.className = "flex-1 text-xs py-2 px-3 rounded-md font-medium border border-zinc-800 bg-zinc-900 text-zinc-400 transition-all";
                 }
             });
-            
             renderList();
         }
 
-        // Action Trigger: Formats a professional reminder text string for WhatsApp integration
+        // WhatsApp Reminder Trigger
         function sendReminder(name, amount, days, phone, event) {
-            event.stopPropagation(); // Avoid closing the accordion panel row on click
-            const text = `Dear ${name}, a friendly reminder from Palyam Enterprises. Your account has an outstanding balance of ₹${amount.toLocaleString('en-IN')} which is currently pending for ${days} days. Please clear the receivables at your earliest convenience to maintain your active material dispatch queue. Thank you.`;
+            event.stopPropagation();
+            const text = `Dear ${name}, a friendly reminder from Palyam Enterprises. Your account has an outstanding balance of ₹${amount.toLocaleString('en-IN')} pending for ${days} days. Please clear the receivables at your earliest convenience. Thank you.`;
             const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
             window.open(whatsappUrl, '_blank');
         }
 
-        // Action Trigger: Updates structural state when outstanding cash is collected
+        // Clear Balance & Save
         function logCollection(id, event) {
             event.stopPropagation();
             contractors = contractors.filter(item => item.id !== id);
             if (expandedId === id) expandedId = null;
+            saveContractors(); // Save the removal to memory
             updateKPIs();
             renderList();
         }
 
-        // Builds the DOM rows dynamically based on filters and state arrays
+        // Modal Controls
+        function openModal() {
+            document.getElementById('add-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+            document.getElementById('add-form').reset();
+        }
+
+        // Add New Contractor Logic
+        function addContractor(event) {
+            event.preventDefault(); // Prevent page reload
+
+            const name = document.getElementById('form-name').value;
+            const outstanding = parseFloat(document.getElementById('form-amount').value);
+            const agingDays = parseInt(document.getElementById('form-days').value);
+            const creditLimit = parseFloat(document.getElementById('form-limit').value);
+            let phone = document.getElementById('form-phone').value;
+
+            // Basic phone format fix (ensures country code exists for WhatsApp)
+            if (!phone.startsWith('91') && phone.length === 10) phone = '91' + phone;
+
+            // Auto-calculate risk status based on strict rules
+            let status = "Current";
+            if (outstanding >= creditLimit || agingDays >= 30) {
+                status = "Critical";
+            } else if (agingDays >= 15) {
+                status = "Overdue";
+            }
+
+            const newAccount = {
+                id: Date.now(), // Unique ID based on timestamp
+                name: name,
+                outstanding: outstanding,
+                agingDays: agingDays,
+                creditLimit: creditLimit,
+                status: status,
+                phone: phone
+            };
+
+            contractors.unshift(newAccount); // Add to the top of the list
+            saveContractors(); // Save to phone memory
+
+            closeModal();
+            updateKPIs();
+            renderList();
+        }
+
+        // Builds the DOM rows dynamically
         function renderList() {
             const container = document.getElementById('contractor-list');
             container.innerHTML = '';
@@ -140,10 +235,8 @@
                 return item.status.toLowerCase() === currentFilter.toLowerCase();
             });
 
-            document.getElementById('account-count').innerText = `${filtered.length} accounts`;
-
             if (filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No priority collection accounts found.</div>`;
+                container.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No accounts found.</div>`;
                 return;
             }
 
@@ -151,7 +244,6 @@
                 const isExpanded = item.id === expandedId;
                 const utilizationPct = Math.min(100, Math.round((item.outstanding / item.creditLimit) * 100));
                 
-                // Color configuration strictly matching critical financial warning profiles
                 let statusBadgeColor = "text-zinc-400 bg-zinc-900 border-zinc-800";
                 if (item.status === "Critical") statusBadgeColor = "text-red-400 bg-red-950/30 border-red-900/50";
                 if (item.status === "Overdue") statusBadgeColor = "text-amber-400 bg-amber-950/30 border-amber-900/50";
@@ -201,7 +293,7 @@
             });
         }
 
-        // Initialize display state on initial asset load
+        // Initialize app
         updateKPIs();
         renderList();
     </script>
