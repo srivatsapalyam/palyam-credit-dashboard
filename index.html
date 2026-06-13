@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palyam Enterprises - Mobile Command</title>
+    <title>Palyam Enterprises - Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-        /* Hide sections dynamically */
         .tab-hidden { display: none !important; }
     </style>
 </head>
@@ -20,50 +19,34 @@
                 <h1 class="text-sm font-bold tracking-wider uppercase text-zinc-400">Palyam Enterprises</h1>
                 <p id="header-subtitle" class="text-xs text-zinc-500">Receivables & Credit</p>
             </div>
-            <button onclick="window.location.reload()" class="inline-flex items-center rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-300 border border-zinc-700">
+            <button onclick="window.location.reload()" class="inline-flex items-center rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-300 border border-zinc-700 active:bg-zinc-700">
                 ↻ Sync
             </button>
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto pb-20">
+    <main class="flex-1 overflow-y-auto pb-24">
         
         <div id="view-receivables" class="max-w-md mx-auto px-4 mt-6 space-y-6">
             <section class="grid grid-cols-2 gap-3">
                 <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Total Outstanding</p>
-                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-total">₹1,45,000</p>
+                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Outstanding</p>
+                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-total">₹0</p>
                 </div>
                 <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
                     <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Avg DSO</p>
-                    <p class="text-xl font-bold mt-1 text-zinc-100">24 Days</p>
+                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-dso">0 Days</p>
                 </div>
             </section>
             
             <section class="space-y-3">
-                <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Critical Accounts</h2>
-                <div class="space-y-2.5">
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex justify-between items-center">
-                        <div>
-                            <h3 class="text-sm font-semibold text-zinc-100">Srivatsa Builders</h3>
-                            <p class="text-xs text-zinc-500">32 days outstanding</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-zinc-200">₹45,000</p>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-red-400 bg-red-950/30 border-red-900/50">Critical</span>
-                        </div>
-                    </div>
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex justify-between items-center">
-                        <div>
-                            <h3 class="text-sm font-semibold text-zinc-100">Kushalnagar Const.</h3>
-                            <p class="text-xs text-zinc-500">46 days outstanding</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-zinc-200">₹28,000</p>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-amber-400 bg-amber-950/30 border-amber-900/50">Overdue</span>
-                        </div>
-                    </div>
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Contractor Ledger</h2>
+                    <button onclick="openModal('credit-modal')" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
+                        + Add Client
+                    </button>
                 </div>
+                <div id="contractor-list" class="space-y-2.5"></div>
             </section>
         </div>
 
@@ -71,95 +54,90 @@
             <section class="grid grid-cols-2 gap-3">
                 <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
                     <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Stock Alerts</p>
-                    <p class="text-xl font-bold mt-1 text-red-400">3 Items</p>
+                    <p class="text-xl font-bold mt-1 text-red-400" id="kpi-alerts">0 Items</p>
                 </div>
                 <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Dead Stock Cap.</p>
-                    <p class="text-xl font-bold mt-1 text-zinc-100">₹85K</p>
+                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Capital in Stock</p>
+                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-capital">₹0</p>
                 </div>
             </section>
             
             <section class="space-y-3">
-                <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Reorder Action List</h2>
-                <div class="space-y-2.5">
-                    
-                    <div class="bg-zinc-900 border border-red-900/50 rounded-lg p-4 space-y-3">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="text-sm font-semibold text-zinc-100">Bosch Masonry Drill 8mm</h3>
-                                <p class="text-xs text-zinc-500 mt-0.5">Supplier: Bangalore Tools Hub</p>
-                            </div>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-red-400 bg-red-950/30 border-red-900/50">Out of Stock</span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded">
-                            <span>Current: 0</span>
-                            <span>Reorder Pt: 10</span>
-                        </div>
-                        <button onclick="pingSupplier('Bangalore Tools Hub', 'Bosch Masonry Drill 8mm')" class="w-full bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded flex justify-center items-center gap-2">
-                            WhatsApp Supplier
-                        </button>
-                    </div>
-
-                    <div class="bg-zinc-900 border border-amber-900/50 rounded-lg p-4 space-y-3">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="text-sm font-semibold text-zinc-100">Asian Paints Apex 20L</h3>
-                                <p class="text-xs text-zinc-500 mt-0.5">Supplier: Mysore Paints Dist</p>
-                            </div>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-amber-400 bg-amber-950/30 border-amber-900/50">Low Stock</span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded">
-                            <span>Current: 2</span>
-                            <span>Reorder Pt: 5</span>
-                        </div>
-                        <button onclick="pingSupplier('Mysore Paints Dist', 'Asian Paints Apex 20L White')" class="w-full border border-zinc-700 text-zinc-300 text-xs font-bold py-2 rounded hover:bg-zinc-800 transition">
-                            Draft Reorder Email
-                        </button>
-                    </div>
-
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Inventory Monitor</h2>
+                    <button onclick="openInventoryModal()" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
+                        + Add Stock
+                    </button>
                 </div>
+                <div id="inventory-list" class="space-y-2.5"></div>
             </section>
         </div>
+
     </main>
 
-    <nav class="fixed bottom-0 w-full bg-zinc-950 border-t border-zinc-800 pb-safe">
+    <nav class="fixed bottom-0 w-full bg-zinc-950 border-t border-zinc-800 pb-safe z-40">
         <div class="max-w-md mx-auto flex justify-around">
             <button onclick="switchTab('receivables')" id="nav-receivables" class="flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all">
                 💰 Credit
             </button>
-            <button onclick="switchTab('inventory')" id="nav-inventory" class="flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent hover:text-zinc-300 transition-all">
+            <button onclick="switchTab('inventory')" id="nav-inventory" class="flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all">
                 📦 Inventory
             </button>
         </div>
     </nav>
 
+    <div id="credit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center px-4">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-md p-5 space-y-4">
+            <h3 class="text-lg font-bold text-zinc-100 border-b border-zinc-800 pb-2">Add New Credit Account</h3>
+            <form onsubmit="addContractor(event)" class="space-y-3">
+                <div><label class="text-xs text-zinc-400">Business Name</label><input type="text" id="c-name" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs text-zinc-400">Amount (₹)</label><input type="number" id="c-amount" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                    <div><label class="text-xs text-zinc-400">Days Pending</label><input type="number" id="c-days" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs text-zinc-400">Limit (₹)</label><input type="number" id="c-limit" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                    <div><label class="text-xs text-zinc-400">Phone No.</label><input type="tel" id="c-phone" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                </div>
+                <div class="flex gap-3 pt-3">
+                    <button type="button" onclick="closeModal('credit-modal')" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="inventory-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center px-4">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-md p-5 space-y-4">
+            <h3 id="inv-modal-title" class="text-lg font-bold text-zinc-100 border-b border-zinc-800 pb-2">Add / Edit Inventory</h3>
+            <form onsubmit="saveInventory(event)" class="space-y-3">
+                <input type="hidden" id="i-id">
+                <div><label class="text-xs text-zinc-400">Item Name</label><input type="text" id="i-name" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs text-zinc-400">Current Stock</label><input type="number" id="i-current" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                    <div><label class="text-xs text-zinc-400">Reorder Point</label><input type="number" id="i-reorder" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs text-zinc-400">Supplier Name</label><input type="text" id="i-supplier" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                    <div><label class="text-xs text-zinc-400">Unit Cost (₹)</label><input type="number" id="i-cost" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                </div>
+                <div><label class="text-xs text-zinc-400">Supplier Phone (For WhatsApp)</label><input type="tel" id="i-phone" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                
+                <div class="flex gap-3 pt-3">
+                    <button type="button" onclick="closeModal('inventory-modal')" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold">Save Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        function switchTab(tabName) {
-            // Hide all views
+        // Formatting Utility
+        const formatMoney = (amt) => '₹' + parseInt(amt).toLocaleString('en-IN');
+
+        // ================= TAB NAVIGATION =================
+        function switchTab(tab) {
             document.getElementById('view-receivables').classList.add('tab-hidden');
             document.getElementById('view-inventory').classList.add('tab-hidden');
-            
-            // Reset nav styles
             document.getElementById('nav-receivables').className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all";
-            document.getElementById('nav-inventory').className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all";
-
-            // Activate selected view and nav
-            if (tabName === 'receivables') {
-                document.getElementById('view-receivables').classList.remove('tab-hidden');
-                document.getElementById('nav-receivables').className = "flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all";
-                document.getElementById('header-subtitle').innerText = "Receivables & Credit";
-            } else if (tabName === 'inventory') {
-                document.getElementById('view-inventory').classList.remove('tab-hidden');
-                document.getElementById('nav-inventory').className = "flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all";
-                document.getElementById('header-subtitle').innerText = "Supply & Stock Alerts";
-            }
-        }
-
-        function pingSupplier(distributor, item) {
-            const text = `Hello ${distributor}, Palyam Enterprises here. We need to place an urgent restock order for: ${item}. Please confirm current pricing and dispatch time.`;
-            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-    </script>
-</body>
-</html>
+            document.getElementById('nav-inventory').className = "flex-1 py-4 text-xs font-bold text-zinc-50
