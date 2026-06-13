@@ -37,24 +37,28 @@
                 <h2 class="text-sm font-bold tracking-wide text-zinc-100 mb-4 flex items-center gap-2">
                     <span class="bg-blue-500/20 text-blue-400 rounded px-1.5 py-0.5 text-xs">1</span> Add Line Item
                 </h2>
+                
                 <div class="space-y-3">
                     <input type="text" id="q-name" placeholder="Item Description (e.g. 2-inch Pipe)" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
                     
                     <div class="grid grid-cols-3 gap-2">
                         <div>
-                            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Wholesale (₹)</label>
-                            <input type="number" id="q-cost" placeholder="Cost" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-400 focus:border-blue-500 outline-none">
+                            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Wholesale</label>
+                            <input type="number" id="q-cost" placeholder="₹0" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-400 focus:border-blue-500 outline-none">
                         </div>
                         <div>
-                            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Selling (₹)</label>
-                            <input type="number" id="q-price" placeholder="Price" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none font-bold">
+                            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Selling</label>
+                            <input type="number" id="q-price" placeholder="₹0" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none font-bold">
                         </div>
                         <div>
                             <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Qty</label>
                             <input type="number" id="q-qty" value="1" min="1" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none text-center font-bold">
                         </div>
                     </div>
-                    <button onclick="addToQuote()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors mt-2">
+                    
+                    <div id="error-msg" class="hidden bg-red-950/30 border border-red-900/50 text-red-400 text-xs font-bold rounded-lg p-3 text-center"></div>
+                    
+                    <button id="add-btn" onclick="addToQuote()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors mt-2 shadow-lg shadow-blue-900/20">
                         + Add to Estimate
                     </button>
                 </div>
@@ -136,7 +140,6 @@
                 <div id="history-list" class="space-y-3"></div>
             </section>
         </div>
-
     </main>
 
     <nav class="fixed bottom-0 left-0 w-full bg-zinc-950 border-t border-zinc-800 z-50">
@@ -152,4 +155,218 @@
 
     <script>
         const formatMoney = (amt) => '₹' + parseFloat(amt).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-        const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day:
+        const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        document.getElementById('header-date').innerText = dateStr;
+
+        // --- ROBUST STATE MANAGEMENT ---
+        let currentQuote = [];
+        let discount = { type: 'none', val: 0 };
+        let historyLog = [];
+        
+        // Crash-proof memory loader
+        try {
+            const saved = localStorage.getItem('palyam_history');
+            if (saved) {
+                historyLog = JSON.parse(saved);
+                if (!Array.isArray(historyLog)) historyLog = [];
+            }
+        } catch(e) {
+            historyLog = [];
+        }
+
+        // --- NAVIGATION ---
+        function switchTab(tab) {
+            ['view-estimator', 'view-history'].forEach(id => document.getElementById(id).classList.add('tab-hidden'));
+            ['nav-estimator', 'nav-history'].forEach(id => document.getElementById(id).className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all");
+            
+            document.getElementById(`view-${tab}`).classList.remove('tab-hidden');
+            document.getElementById(`nav-${tab}`).className = "flex-1 py-4 text-xs font-bold text-blue-400 border-t-2 border-blue-500 transition-all";
+            document.getElementById('header-subtitle').innerText = tab === 'estimator' ? 'Official Estimator' : 'Analytics & Log';
+
+            if(tab === 'history') renderHistory();
+        }
+
+        // --- ERROR UI ---
+        function showUIError(msg) {
+            const errBox = document.getElementById('error-msg');
+            errBox.innerText = "⚠ " + msg;
+            errBox.classList.remove('hidden');
+            setTimeout(() => { errBox.classList.add('hidden'); }, 4000);
+        }
+
+        function flashSuccessButton() {
+            const btn = document.getElementById('add-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "✓ Added Successfully";
+            btn.classList.replace('bg-blue-600', 'bg-emerald-500');
+            btn.classList.replace('hover:bg-blue-500', 'hover:bg-emerald-400');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-emerald-500', 'bg-blue-600');
+                btn.classList.replace('hover:bg-emerald-400', 'hover:bg-blue-500');
+            }, 1000);
+        }
+
+        // --- ESTIMATOR LOGIC ---
+        function addToQuote() {
+            const name = document.getElementById('q-name').value.trim();
+            const costInput = document.getElementById('q-cost').value;
+            const priceInput = document.getElementById('q-price').value;
+            const qtyInput = document.getElementById('q-qty').value;
+
+            // Strict Validation
+            if (!name) { showUIError("Missing Item Description. Please type a name."); return; }
+            if (!priceInput || isNaN(parseFloat(priceInput))) { showUIError("Missing Selling Price. Please enter a valid number."); return; }
+
+            const cost = costInput === '' ? 0 : parseFloat(costInput);
+            const price = parseFloat(priceInput);
+            let qty = parseInt(qtyInput);
+            
+            if (isNaN(qty) || qty <= 0) qty = 1;
+
+            currentQuote.push({ id: Date.now(), name, cost, price, qty });
+            
+            // Clean up inputs and flash success
+            document.getElementById('q-name').value = '';
+            document.getElementById('q-cost').value = '';
+            document.getElementById('q-price').value = '';
+            document.getElementById('q-qty').value = '1';
+            document.getElementById('q-name').focus();
+            
+            flashSuccessButton();
+            updateEngine();
+        }
+
+        function remove(id) { currentQuote = currentQuote.filter(i => i.id !== id); updateEngine(); }
+        
+        function clearQuote() { 
+            if(currentQuote.length === 0) return;
+            // Using confirm is usually safe, but let's replace it if blocked
+            currentQuote = []; 
+            discount = {type:'none', val:0}; 
+            updateEngine(); 
+        }
+
+        function applyDiscount(type, val) {
+            if (type === 'flat') {
+                val = parseFloat(prompt("Enter flat discount amount (₹):", "0"));
+                if (isNaN(val) || val < 0) return;
+            }
+            discount = { type, val };
+            updateEngine();
+        }
+
+        function updateEngine() {
+            let subtotal = 0; let totalCost = 0;
+            
+            const list = document.getElementById('quote-list'); list.innerHTML = '';
+            if (currentQuote.length === 0) list.innerHTML = `<div class="text-center py-4 border border-dashed border-zinc-800 rounded-xl"><p class="text-xs text-zinc-600 italic">No items added yet.</p></div>`;
+            
+            currentQuote.forEach(item => {
+                const linePrice = item.price * item.qty;
+                subtotal += linePrice; totalCost += (item.cost * item.qty);
+                list.innerHTML += `
+                <div class="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                    <div class="space-y-1">
+                        <p class="text-sm font-semibold text-zinc-100">${item.name}</p>
+                        <p class="text-[11px] text-zinc-500 tracking-wide">${item.qty} units × ${formatMoney(item.price)}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <p class="text-sm font-bold text-zinc-200">${formatMoney(linePrice)}</p>
+                        <button onclick="remove(${item.id})" class="text-zinc-600 hover:text-red-400 font-bold px-3 py-1">×</button>
+                    </div>
+                </div>`;
+            });
+
+            let discountAmt = 0;
+            if (discount.type === 'percent') discountAmt = subtotal * (discount.val / 100);
+            if (discount.type === 'flat') discountAmt = discount.val;
+            
+            let grandTotal = subtotal - discountAmt;
+            if (grandTotal < 0) grandTotal = 0;
+
+            let expectedProfit = grandTotal - totalCost;
+            let profitMargin = grandTotal > 0 ? ((expectedProfit / grandTotal) * 100).toFixed(1) : 0;
+
+            document.getElementById('ui-subtotal').innerText = formatMoney(subtotal);
+            document.getElementById('ui-discount').innerText = `-${formatMoney(discountAmt)} ${discount.type==='percent' ? `(${discount.val}%)` : ''}`;
+            document.getElementById('ui-total').innerText = formatMoney(grandTotal);
+            
+            const pElement = document.getElementById('ui-profit');
+            pElement.innerText = `${formatMoney(expectedProfit)} (${profitMargin}%)`;
+            pElement.className = expectedProfit >= 0 ? "font-mono text-emerald-400 font-bold" : "font-mono text-red-400 font-bold";
+        }
+
+        // --- EXPORT & LOGGING ---
+        function getTotals() {
+            let subtotal = currentQuote.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            let cost = currentQuote.reduce((sum, i) => sum + (i.cost * i.qty), 0);
+            let dAmt = discount.type === 'percent' ? subtotal * (discount.val/100) : (discount.type === 'flat' ? discount.val : 0);
+            let total = subtotal - dAmt;
+            return { subtotal, cost, dAmt, total, profit: total - cost };
+        }
+
+        function generateAction(method) {
+            if (currentQuote.length === 0) { showUIError("Add items to the estimate first."); return; }
+            const estId = "EST-" + Math.floor(1000 + Math.random() * 9000);
+            const t = getTotals();
+            
+            // Log to analytics safely
+            historyLog.unshift({ id: estId, date: new Date().toISOString(), total: t.total, profit: t.profit, items: currentQuote.length });
+            try { localStorage.setItem('palyam_history', JSON.stringify(historyLog)); } catch(e) {}
+
+            if (method === 'whatsapp') {
+                let phone = document.getElementById('q-phone').value.replace(/\D/g,'');
+                if (!phone) { showUIError("Please enter a WhatsApp Number."); return; }
+                if (!phone.startsWith('91') && phone.length === 10) phone = '91' + phone;
+                
+                let msg = `*PALYAM ENTERPRISES*\n_Estimate ID: #${estId}_\n------------------------\n\n`;
+                currentQuote.forEach((i, idx) => { msg += `*${idx+1}. ${i.name}*\n${i.qty} x ${formatMoney(i.price)} = *${formatMoney(i.price*i.qty)}*\n\n`; });
+                msg += `------------------------\n*Subtotal: ${formatMoney(t.subtotal)}*\n`;
+                if(t.dAmt > 0) msg += `*Discount: -${formatMoney(t.dAmt)}*\n`;
+                msg += `*GRAND TOTAL: ${formatMoney(t.total)}*\n\n_Please reply to confirm._`;
+                
+                window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
+            } 
+        }
+
+        // --- HISTORY LOGIC ---
+        function renderHistory() {
+            const list = document.getElementById('history-list'); list.innerHTML = '';
+            let todayRevenue = 0; let todayProfit = 0;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (historyLog.length === 0) { list.innerHTML = `<p class="text-center text-xs text-zinc-600 py-6">No estimates logged yet.</p>`; }
+            else {
+                historyLog.forEach(log => {
+                    const logDate = new Date(log.date);
+                    if (logDate.toISOString().split('T')[0] === todayStr) { todayRevenue += log.total; todayProfit += log.profit; }
+                    
+                    list.innerHTML += `
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-zinc-100">#${log.id}</p>
+                            <p class="text-[10px] text-zinc-500">${logDate.toLocaleDateString()} • ${log.items} items</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-black text-blue-400">${formatMoney(log.total)}</p>
+                            <p class="text-[10px] ${log.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}">Margin: ${formatMoney(log.profit)}</p>
+                        </div>
+                    </div>`;
+                });
+            }
+            document.getElementById('kpi-sales').innerText = formatMoney(todayRevenue); document.getElementById('kpi-profit').innerText = formatMoney(todayProfit);
+        }
+
+        function clearHistory() { 
+            historyLog = []; 
+            try { localStorage.removeItem('palyam_history'); } catch(e){} 
+            renderHistory(); 
+        }
+
+        // Boot
+        updateEngine();
+    </script>
+</body>
+</html>
