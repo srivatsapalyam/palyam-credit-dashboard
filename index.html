@@ -78,14 +78,9 @@
                 <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400 border-b border-zinc-800 pb-2">Draft Customer Quote</h2>
                 
                 <div class="flex gap-2">
-                    <div class="flex-1">
-                        <select id="quote-item-select" class="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500 appearance-none">
-                            <option value="">Select Item...</option>
-                            </select>
-                    </div>
-                    <div class="w-20">
-                        <input type="number" id="quote-item-qty" placeholder="Qty" min="1" class="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500 text-center">
-                    </div>
+                    <input type="text" id="quote-item-name" placeholder="Item Name" class="flex-[3] min-w-0 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
+                    <input type="number" id="quote-item-cost" placeholder="₹ Price" min="0" class="flex-[2] min-w-0 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500 text-center">
+                    <input type="number" id="quote-item-qty" placeholder="Qty" min="1" class="flex-[1] min-w-0 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500 text-center">
                     <button onclick="addToQuote()" class="bg-zinc-100 text-zinc-950 font-bold px-3 rounded hover:bg-zinc-200">
                         +
                     </button>
@@ -175,7 +170,6 @@
     </div>
 
     <script>
-        // Formatting & Date Utilities
         const formatMoney = (amt) => '₹' + parseInt(amt).toLocaleString('en-IN');
         
         function calculateDaysPending(dateString) {
@@ -194,32 +188,24 @@
 
         // ================= TAB NAVIGATION =================
         function switchTab(tab) {
-            // Hide all views
             ['view-receivables', 'view-inventory', 'view-quote'].forEach(id => {
                 document.getElementById(id).classList.add('tab-hidden');
             });
-            // Reset all nav styles
             ['nav-receivables', 'nav-inventory', 'nav-quote'].forEach(id => {
                 document.getElementById(id).className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all";
             });
 
-            // Activate chosen view
             document.getElementById(`view-${tab}`).classList.remove('tab-hidden');
             document.getElementById(`nav-${tab}`).className = "flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all";
 
-            // Update Header Subtitle
             const subtitles = {
                 'receivables': 'Receivables & Credit',
                 'inventory': 'Supply & Stock Alerts',
                 'quote': 'Instant Estimator'
             };
             document.getElementById('header-subtitle').innerText = subtitles[tab];
-
-            // If entering quote tab, refresh the dropdown from inventory data
-            if (tab === 'quote') populateQuoteDropdown();
         }
 
-        // ================= MODAL CONTROLS =================
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openCreditModal() {
@@ -230,13 +216,12 @@
         // ================= DATA LOADING =================
         let creditData = [];
         let invData = [];
-        let currentQuote = []; // Temporary memory for the active quote
+        let currentQuote = []; 
         
         try { creditData = JSON.parse(localStorage.getItem('palyam_credit')) || []; } catch(e) { creditData = []; }
         try { invData = JSON.parse(localStorage.getItem('palyam_inventory')) || []; } catch(e) { invData = []; }
 
-        // ================= RECEIVABLES & INVENTORY (Standard Engine) =================
-        // [Existing logic remains unchanged for Credit and Inventory tabs]
+        // ================= RECEIVABLES & INVENTORY =================
         function renderCredit() {
             const list = document.getElementById('contractor-list');
             list.innerHTML = ''; let total = 0; let totalDays = 0;
@@ -293,43 +278,39 @@
             e.preventDefault(); const id = document.getElementById('i-id').value;
             const newItem = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('i-name').value, current: parseInt(document.getElementById('i-current').value), reorder: parseInt(document.getElementById('i-reorder').value), supplier: document.getElementById('i-supplier').value, cost: parseInt(document.getElementById('i-cost').value), phone: document.getElementById('i-phone').value };
             if (id) { invData = invData.map(i => i.id === parseInt(id) ? newItem : i); } else { invData.push(newItem); }
-            localStorage.setItem('palyam_inventory', JSON.stringify(invData)); closeModal('inventory-modal'); renderInventory(); populateQuoteDropdown();
+            localStorage.setItem('palyam_inventory', JSON.stringify(invData)); closeModal('inventory-modal'); renderInventory();
         }
 
-        function deleteInventory(id) { if(confirm('Are you sure you want to delete this inventory item?')) { invData = invData.filter(i => i.id !== id); localStorage.setItem('palyam_inventory', JSON.stringify(invData)); renderInventory(); populateQuoteDropdown(); } }
+        function deleteInventory(id) { if(confirm('Are you sure you want to delete this inventory item?')) { invData = invData.filter(i => i.id !== id); localStorage.setItem('palyam_inventory', JSON.stringify(invData)); renderInventory(); } }
 
         function pingWhatsApp(phone, msg) { let p = phone; if (!p.startsWith('91') && p.length === 10) p = '91' + p; window.open(`https://api.whatsapp.com/send?phone=${p}&text=${encodeURIComponent(msg)}`, '_blank'); }
 
-        // ================= NEW QUOTE ESTIMATOR LOGIC =================
-        
-        function populateQuoteDropdown() {
-            const select = document.getElementById('quote-item-select');
-            select.innerHTML = '<option value="">Select Item from Inventory...</option>';
-            invData.forEach(item => {
-                // Add item to dropdown, showing name and price
-                select.innerHTML += `<option value="${item.id}">${item.name} (${formatMoney(item.cost)})</option>`;
-            });
-        }
+        // ================= MANUAL QUOTE ESTIMATOR LOGIC =================
 
         function addToQuote() {
-            const selectId = document.getElementById('quote-item-select').value;
-            const qtyInput = document.getElementById('quote-item-qty').value;
+            const nameInput = document.getElementById('quote-item-name').value.trim();
+            const costInput = parseFloat(document.getElementById('quote-item-cost').value);
+            const qtyInput = parseInt(document.getElementById('quote-item-qty').value);
             
-            if(!selectId || !qtyInput || qtyInput <= 0) return; // Prevent empty adds
+            if (!nameInput) {
+                alert("Please enter the item name.");
+                return;
+            }
+            if (isNaN(costInput) || costInput < 0 || isNaN(qtyInput) || qtyInput <= 0) {
+                alert("Please enter a valid price and quantity.");
+                return;
+            }
             
-            // Find the item details from the inventory database
-            const itemDetails = invData.find(i => i.id === parseInt(selectId));
-            
-            // Push to our temporary quote list
             currentQuote.push({
                 id: Date.now(),
-                name: itemDetails.name,
-                cost: itemDetails.cost,
-                qty: parseInt(qtyInput)
+                name: nameInput,
+                cost: costInput,
+                qty: qtyInput
             });
             
-            // Reset the form inputs
-            document.getElementById('quote-item-select').value = '';
+            // Clear inputs for the next item
+            document.getElementById('quote-item-name').value = '';
+            document.getElementById('quote-item-cost').value = '';
             document.getElementById('quote-item-qty').value = '';
             
             renderQuoteUI();
@@ -341,9 +322,11 @@
         }
 
         function clearQuote() {
-            currentQuote = [];
-            document.getElementById('quote-customer-phone').value = '';
-            renderQuoteUI();
+            if(confirm('Are you sure you want to clear this entire quote?')) {
+                currentQuote = [];
+                document.getElementById('quote-customer-phone').value = '';
+                renderQuoteUI();
+            }
         }
 
         function renderQuoteUI() {
@@ -387,7 +370,6 @@
                 return;
             }
 
-            // Build the professional text receipt
             let message = `*PALYAM ENTERPRISES*\n_Hardware & Supply Estimate_\n------------------------\n\n`;
             
             let grandTotal = 0;
@@ -402,7 +384,6 @@
             message += `*Total Estimate: ${formatMoney(grandTotal)}*\n\n`;
             message += `_Please let us know if you would like to proceed with this order. Thank you!_`;
 
-            // Trigger WhatsApp
             pingWhatsApp(phone, message);
         }
 
@@ -410,7 +391,7 @@
         window.onload = () => {
             renderCredit();
             renderInventory();
-            populateQuoteDropdown();
+            renderQuoteUI(); // Initialize empty quote UI
         };
     </script>
 </body>
