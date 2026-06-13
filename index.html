@@ -19,8 +19,8 @@
                 <h1 class="text-sm font-bold tracking-wider uppercase text-zinc-400">Palyam Enterprises</h1>
                 <p id="header-subtitle" class="text-xs text-zinc-500">Receivables & Credit</p>
             </div>
-            <button onclick="hardResetApp()" class="inline-flex items-center rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-red-400 border border-red-900/50 hover:bg-zinc-700">
-                ⚠ Factory Reset
+            <button onclick="window.location.reload(true)" class="inline-flex items-center rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-300 border border-zinc-700 active:bg-zinc-700">
+                ↻ Sync
             </button>
         </div>
     </header>
@@ -133,15 +133,6 @@
         // Formatting Utility
         const formatMoney = (amt) => '₹' + parseInt(amt).toLocaleString('en-IN');
 
-        // Factory Reset Utility (Clears corrupted memory)
-        function hardResetApp() {
-            if(confirm("This will clear corrupted memory and restore default data. Continue?")) {
-                localStorage.removeItem('palyam_credit');
-                localStorage.removeItem('palyam_inventory');
-                window.location.reload(true);
-            }
-        }
-
         // ================= TAB NAVIGATION =================
         function switchTab(tab) {
             document.getElementById('view-receivables').classList.add('tab-hidden');
@@ -164,30 +155,24 @@
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        // ================= DATA LOADING (WITH SELF-HEALING) =================
+        // ================= DATA LOADING (ROBUST) =================
         let creditData = [];
         let invData = [];
         
         try {
             let savedCredit = localStorage.getItem('palyam_credit');
-            creditData = savedCredit ? JSON.parse(savedCredit) : null;
+            creditData = savedCredit ? JSON.parse(savedCredit) : [];
             if (!Array.isArray(creditData)) throw new Error("Corrupted Data");
         } catch(e) {
-            creditData = [
-                { id: 1, name: "Srivatsa Builders", amount: 45000, days: 32, limit: 50000, phone: "919876543210" },
-                { id: 2, name: "Kushalnagar Const.", amount: 28000, days: 46, limit: 30000, phone: "919876543212" }
-            ];
+            creditData = [];
         }
 
         try {
             let savedInv = localStorage.getItem('palyam_inventory');
-            invData = savedInv ? JSON.parse(savedInv) : null;
+            invData = savedInv ? JSON.parse(savedInv) : [];
             if (!Array.isArray(invData)) throw new Error("Corrupted Data");
         } catch(e) {
-            invData = [
-                { id: 1, name: "Bosch Masonry Drill 8mm", current: 0, reorder: 10, cost: 250, supplier: "Bangalore Tools Hub", phone: "919876543222" },
-                { id: 2, name: "Asian Paints Apex 20L", current: 2, reorder: 5, cost: 3500, supplier: "Mysore Paints Dist", phone: "919876543233" }
-            ];
+            invData = [];
         }
 
         // ================= RECEIVABLES LOGIC =================
@@ -197,32 +182,36 @@
             
             let total = 0; let totalDays = 0;
             
-            creditData.forEach(item => {
-                total += parseInt(item.amount);
-                totalDays += parseInt(item.days);
-                
-                let status = "Current"; let color = "text-zinc-400 bg-zinc-900 border-zinc-800";
-                if (item.amount >= item.limit || item.days >= 30) { status = "Critical"; color = "text-red-400 bg-red-950/30 border-red-900/50"; }
-                else if (item.days >= 15) { status = "Overdue"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; }
+            if (creditData.length === 0) {
+                list.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No accounts found. Click '+ Add Client' to begin.</div>`;
+            } else {
+                creditData.forEach(item => {
+                    total += parseInt(item.amount);
+                    totalDays += parseInt(item.days);
+                    
+                    let status = "Current"; let color = "text-zinc-400 bg-zinc-900 border-zinc-800";
+                    if (item.amount >= item.limit || item.days >= 30) { status = "Critical"; color = "text-red-400 bg-red-950/30 border-red-900/50"; }
+                    else if (item.days >= 15) { status = "Overdue"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; }
 
-                list.innerHTML += `
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3 relative">
-                    <button onclick="deleteCredit(${item.id})" class="absolute top-2 right-3 text-zinc-600 hover:text-red-400 text-xl font-bold px-2">×</button>
-                    <div class="flex justify-between items-start pr-8">
-                        <div>
-                            <h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3>
-                            <p class="text-xs text-zinc-500">${item.days} days pending</p>
+                    list.innerHTML += `
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3 relative">
+                        <button onclick="deleteCredit(${item.id})" class="absolute top-2 right-3 text-zinc-600 hover:text-red-400 text-xl font-bold px-2">×</button>
+                        <div class="flex justify-between items-start pr-8">
+                            <div>
+                                <h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3>
+                                <p class="text-xs text-zinc-500">${item.days} days pending</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-zinc-200">${formatMoney(item.amount)}</p>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${color}">${status}</span>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-zinc-200">${formatMoney(item.amount)}</p>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${color}">${status}</span>
+                        <div class="flex gap-2 pt-2 border-t border-zinc-800">
+                            <button onclick="pingWhatsApp('${item.phone}', 'Reminder: ₹${item.amount} pending for ${item.days} days.')" class="flex-1 bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">Ping WhatsApp</button>
                         </div>
-                    </div>
-                    <div class="flex gap-2 pt-2 border-t border-zinc-800">
-                        <button onclick="pingWhatsApp('${item.phone}', 'Reminder: ₹${item.amount} pending for ${item.days} days.')" class="flex-1 bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">Ping WhatsApp</button>
-                    </div>
-                </div>`;
-            });
+                    </div>`;
+                });
+            }
 
             document.getElementById('kpi-total').innerText = formatMoney(total);
             document.getElementById('kpi-dso').innerText = creditData.length ? Math.round(totalDays / creditData.length) + ' Days' : '0 Days';
@@ -257,38 +246,42 @@
             
             let alerts = 0; let capital = 0;
             
-            const sortedInv = [...invData].sort((a, b) => (a.current - a.reorder) - (b.current - b.reorder));
+            if (invData.length === 0) {
+                list.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No inventory found. Click '+ Add Stock' to begin.</div>`;
+            } else {
+                const sortedInv = [...invData].sort((a, b) => (a.current - a.reorder) - (b.current - b.reorder));
 
-            sortedInv.forEach(item => {
-                capital += (parseInt(item.current) * parseInt(item.cost));
-                
-                let status = "In Stock"; let color = "text-emerald-400 bg-emerald-950/30 border-emerald-900/50";
-                if (item.current <= 0) { status = "Out of Stock"; color = "text-red-400 bg-red-950/30 border-red-900/50"; alerts++; }
-                else if (item.current <= item.reorder) { status = "Low Stock"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; alerts++; }
+                sortedInv.forEach(item => {
+                    capital += (parseInt(item.current) * parseInt(item.cost));
+                    
+                    let status = "In Stock"; let color = "text-emerald-400 bg-emerald-950/30 border-emerald-900/50";
+                    if (item.current <= 0) { status = "Out of Stock"; color = "text-red-400 bg-red-950/30 border-red-900/50"; alerts++; }
+                    else if (item.current <= item.reorder) { status = "Low Stock"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; alerts++; }
 
-                list.innerHTML += `
-                <div class="bg-zinc-900 border ${item.current <= 0 ? 'border-red-900/50' : 'border-zinc-800'} rounded-lg p-4 space-y-3 relative">
-                    <button onclick="deleteInventory(${item.id})" class="absolute top-2 right-3 text-zinc-600 hover:text-red-400 text-xl font-bold px-2">×</button>
-                    <div class="flex justify-between items-start pr-8">
-                        <div>
-                            <h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3>
-                            <p class="text-xs text-zinc-500 mt-0.5">Supplier: ${item.supplier}</p>
+                    list.innerHTML += `
+                    <div class="bg-zinc-900 border ${item.current <= 0 ? 'border-red-900/50' : 'border-zinc-800'} rounded-lg p-4 space-y-3 relative">
+                        <button onclick="deleteInventory(${item.id})" class="absolute top-2 right-3 text-zinc-600 hover:text-red-400 text-xl font-bold px-2">×</button>
+                        <div class="flex justify-between items-start pr-8">
+                            <div>
+                                <h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3>
+                                <p class="text-xs text-zinc-500 mt-0.5">Supplier: ${item.supplier}</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-1.5">
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${color}">${status}</span>
+                                <button onclick="openInventoryModal(${item.id})" class="text-xs text-blue-400 font-medium hover:underline px-2">Edit Stock</button>
+                            </div>
                         </div>
-                        <div class="flex flex-col items-end gap-1.5">
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${color}">${status}</span>
-                            <button onclick="openInventoryModal(${item.id})" class="text-xs text-blue-400 font-medium hover:underline px-2">Edit Stock</button>
+                        <div class="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded border border-zinc-800/50">
+                            <span>Current: ${item.current}</span>
+                            <span>Reorder Pt: ${item.reorder}</span>
                         </div>
-                    </div>
-                    <div class="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded border border-zinc-800/50">
-                        <span>Current: ${item.current}</span>
-                        <span>Reorder Pt: ${item.reorder}</span>
-                    </div>
-                    ${item.current <= item.reorder ? `
-                    <button onclick="pingWhatsApp('${item.phone}', 'Hello ${item.supplier}, we need to urgently reorder: ${item.name}. Please confirm dispatch.')" class="w-full bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">
-                        WhatsApp Supplier
-                    </button>` : ''}
-                </div>`;
-            });
+                        ${item.current <= item.reorder ? `
+                        <button onclick="pingWhatsApp('${item.phone}', 'Hello ${item.supplier}, we need to urgently reorder: ${item.name}. Please confirm dispatch.')" class="w-full bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">
+                            WhatsApp Supplier
+                        </button>` : ''}
+                    </div>`;
+                });
+            }
 
             document.getElementById('kpi-alerts').innerText = alerts + ' Items';
             document.getElementById('kpi-capital').innerText = formatMoney(capital);
@@ -351,8 +344,10 @@
         }
 
         // Boot app immediately
-        renderCredit();
-        renderInventory();
+        window.onload = () => {
+            renderCredit();
+            renderInventory();
+        };
     </script>
 </body>
 </html>
