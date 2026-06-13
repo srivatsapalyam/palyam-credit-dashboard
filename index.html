@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palyam Enterprises - Estimator</title>
+    <title>Palyam Enterprises - Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 2px; }
-        /* Hide number input arrows for a cleaner look */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .tab-hidden { display: none !important; }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-50 font-sans antialiased min-h-screen">
+<body class="bg-zinc-950 text-zinc-50 font-sans antialiased min-h-screen pb-24">
 
-    <header class="bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-50 px-4 py-4 shadow-sm">
+    <header class="bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-40 px-4 py-4 shadow-sm">
         <div class="max-w-md mx-auto flex items-center justify-between">
             <div>
                 <h1 class="text-sm font-black tracking-widest uppercase text-blue-500">Palyam Enterprises</h1>
-                <p class="text-xs text-zinc-400 font-medium tracking-wide mt-0.5">Official Estimator Tool</p>
+                <p class="text-xs text-zinc-400 font-medium tracking-wide mt-0.5" id="header-subtitle">Official Estimator Tool</p>
             </div>
             <div class="text-right">
                 <p class="text-[10px] text-zinc-500 uppercase tracking-wider">Date</p>
@@ -30,196 +31,359 @@
 
     <main class="max-w-md mx-auto px-4 py-6 space-y-6">
 
-        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg shadow-black/50 space-y-4 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-blue-400"></div>
+        <div id="view-estimator" class="space-y-6">
             
-            <h2 class="text-sm font-bold tracking-wide text-zinc-100 flex items-center gap-2">
-                <span class="bg-blue-500/20 text-blue-400 rounded bg-opacity-20 px-1.5 py-0.5 text-xs">1</span>
-                Add Line Item
-            </h2>
-            
-            <div class="space-y-3">
+            <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-blue-400"></div>
+                <h2 class="text-sm font-bold tracking-wide text-zinc-100 mb-4 flex items-center gap-2">
+                    <span class="bg-blue-500/20 text-blue-400 rounded px-1.5 py-0.5 text-xs">1</span> Add Line Item
+                </h2>
+                <div class="space-y-3">
+                    <input type="text" id="q-name" placeholder="Item Description (e.g. 2-inch Pipe)" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                    
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Wholesale (₹)</label>
+                            <input type="number" id="q-cost" placeholder="Cost" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-400 focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Selling (₹)</label>
+                            <input type="number" id="q-price" placeholder="Price" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Qty</label>
+                            <input type="number" id="q-qty" placeholder="1" min="1" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none text-center">
+                        </div>
+                    </div>
+                    <button onclick="addToQuote()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors mt-2">
+                        + Add to Estimate
+                    </button>
+                </div>
+            </section>
+
+            <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
+                <div class="flex justify-between items-end border-b border-zinc-800 pb-3">
+                    <h2 class="text-sm font-bold tracking-wide text-zinc-100 flex items-center gap-2">
+                        <span class="bg-blue-500/20 text-blue-400 rounded px-1.5 py-0.5 text-xs">2</span> Current Estimate
+                    </h2>
+                    <button onclick="clearQuote()" class="text-xs font-semibold text-zinc-500 hover:text-red-400 transition-colors">Clear All</button>
+                </div>
+
+                <div id="quote-list" class="space-y-3 min-h-[50px]"></div>
+
+                <div class="pt-2">
+                    <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Apply Discount</label>
+                    <div class="flex gap-2 mt-1">
+                        <button onclick="applyDiscount('percent', 5)" class="flex-1 bg-zinc-950 border border-zinc-700 text-zinc-300 text-xs py-2 rounded-lg hover:border-blue-500">5% Off</button>
+                        <button onclick="applyDiscount('percent', 10)" class="flex-1 bg-zinc-950 border border-zinc-700 text-zinc-300 text-xs py-2 rounded-lg hover:border-blue-500">10% Off</button>
+                        <button onclick="applyDiscount('flat', 0)" class="flex-1 bg-zinc-950 border border-zinc-700 text-zinc-300 text-xs py-2 rounded-lg hover:border-blue-500">Custom ₹</button>
+                        <button onclick="applyDiscount('none', 0)" class="px-3 bg-red-950/30 text-red-400 border border-red-900/50 text-xs py-2 rounded-lg">Clear</button>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 mt-4 space-y-2">
+                    <div class="flex justify-between text-xs text-zinc-400">
+                        <span>Subtotal</span>
+                        <span id="ui-subtotal">₹0</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-emerald-400" id="ui-discount-row">
+                        <span>Discount</span>
+                        <span id="ui-discount">-₹0</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-zinc-800">
+                        <span class="text-xs font-bold uppercase tracking-widest text-zinc-300">Grand Total</span>
+                        <span class="text-2xl font-black text-blue-400" id="ui-total">₹0</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center px-2 py-1 bg-zinc-800/50 rounded text-[10px] text-zinc-400 border border-zinc-700/50">
+                    <span class="flex items-center gap-1">🔒 Est. Margin (Owner Only)</span>
+                    <span class="font-mono text-emerald-400 font-bold" id="ui-profit">₹0 (0%)</span>
+                </div>
+            </section>
+
+            <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
                 <div>
-                    <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Item Description</label>
-                    <input type="text" id="quote-item-name" placeholder="e.g. Ramco Cement 50kg" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700">
+                    <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider ml-1">Customer WhatsApp No.</label>
+                    <div class="flex mt-1">
+                        <span class="bg-zinc-800 border border-zinc-700 border-r-0 rounded-l-xl px-3 py-3 text-sm text-zinc-400">+91</span>
+                        <input type="tel" id="q-phone" placeholder="98765 43210" class="w-full bg-zinc-950 border border-zinc-700 rounded-r-xl p-3 text-sm text-zinc-100 focus:border-blue-500 outline-none">
+                    </div>
                 </div>
                 
-                <div class="flex gap-3">
-                    <div class="flex-1">
-                        <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Unit Price (₹)</label>
-                        <input type="number" id="quote-item-cost" placeholder="0.00" min="0" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700">
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Quantity</label>
-                        <input type="number" id="quote-item-qty" placeholder="1" min="1" class="w-full mt-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700 text-center">
-                    </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="generateAction('whatsapp')" class="bg-zinc-100 hover:bg-white text-zinc-950 text-sm font-black py-4 rounded-xl shadow-lg flex justify-center items-center gap-2">
+                        WhatsApp Text
+                    </button>
+                    <button onclick="generateAction('pdf')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 text-sm font-black py-4 rounded-xl shadow-lg flex justify-center items-center gap-2">
+                        📄 Download PDF
+                    </button>
                 </div>
+            </section>
+        </div>
 
-                <button onclick="addToQuote()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-blue-900/20 mt-2">
-                    + Add to Estimate
-                </button>
-            </div>
-        </section>
-
-        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg shadow-black/50 space-y-4">
-            <div class="flex justify-between items-end border-b border-zinc-800 pb-3">
-                <h2 class="text-sm font-bold tracking-wide text-zinc-100 flex items-center gap-2">
-                    <span class="bg-blue-500/20 text-blue-400 rounded bg-opacity-20 px-1.5 py-0.5 text-xs">2</span>
-                    Current Estimate
-                </h2>
-                <button onclick="clearQuote()" class="text-xs font-semibold text-zinc-500 hover:text-red-400 transition-colors">Clear All</button>
-            </div>
-
-            <div id="quote-list" class="space-y-3 min-h-[80px]">
+        <div id="view-history" class="tab-hidden space-y-6">
+            <section class="grid grid-cols-2 gap-3">
+                <div class="bg-blue-950/30 border border-blue-900/50 rounded-2xl p-4 relative overflow-hidden">
+                    <p class="text-[10px] font-semibold text-blue-400 uppercase tracking-widest">Today's Sales</p>
+                    <p class="text-2xl font-black mt-1 text-zinc-100" id="kpi-sales">₹0</p>
                 </div>
-
-            <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex justify-between items-center mt-4">
-                <span class="text-xs font-bold uppercase tracking-widest text-zinc-400">Grand Total</span>
-                <span class="text-2xl font-black text-blue-400" id="quote-total">₹0</span>
-            </div>
-        </section>
-
-        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg shadow-black/50 space-y-4">
-            <h2 class="text-sm font-bold tracking-wide text-zinc-100 flex items-center gap-2">
-                <span class="bg-blue-500/20 text-blue-400 rounded bg-opacity-20 px-1.5 py-0.5 text-xs">3</span>
-                Send to Customer
-            </h2>
-            
-            <div>
-                <label class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 ml-1">Customer WhatsApp No.</label>
-                <div class="flex mt-1">
-                    <span class="bg-zinc-800 border border-zinc-700 border-r-0 rounded-l-xl px-3 py-3 text-sm text-zinc-400 flex items-center">+91</span>
-                    <input type="tel" id="quote-customer-phone" placeholder="98765 43210" class="w-full bg-zinc-950 border border-zinc-700 rounded-r-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-700">
+                <div class="bg-emerald-950/30 border border-emerald-900/50 rounded-2xl p-4 relative overflow-hidden">
+                    <p class="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest">Today's Profit</p>
+                    <p class="text-2xl font-black mt-1 text-zinc-100" id="kpi-profit">₹0</p>
                 </div>
-            </div>
-            
-            <button onclick="sendQuoteWhatsApp()" class="w-full bg-zinc-100 hover:bg-white text-zinc-950 text-sm font-black py-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-2">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-                Send via WhatsApp
-            </button>
-        </section>
+            </section>
+
+            <section class="space-y-3">
+                <div class="flex justify-between items-end border-b border-zinc-800 pb-2">
+                    <h2 class="text-sm font-bold tracking-wide text-zinc-100">Saved Estimates</h2>
+                    <button onclick="clearHistory()" class="text-[10px] text-zinc-500 hover:text-red-400">Clear Log</button>
+                </div>
+                <div id="history-list" class="space-y-3"></div>
+            </section>
+        </div>
 
     </main>
 
+    <nav class="fixed bottom-0 left-0 w-full bg-zinc-950 border-t border-zinc-800 z-50">
+        <div class="max-w-md mx-auto flex justify-around">
+            <button onclick="switchTab('estimator')" id="nav-estimator" class="flex-1 py-4 text-xs font-bold text-blue-400 border-t-2 border-blue-500 transition-all">
+                📝 Estimator
+            </button>
+            <button onclick="switchTab('history')" id="nav-history" class="flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all">
+                📊 Analytics
+            </button>
+        </div>
+    </nav>
+
+    <div id="pdf-container" style="display:none;">
+        <div id="invoice-template" style="background:white; color:black; padding:40px; font-family:sans-serif; width:800px;">
+            <div style="border-bottom:2px solid #1e3a8a; padding-bottom:20px; margin-bottom:30px; display:flex; justify-content:space-between;">
+                <div>
+                    <h1 style="color:#1e3a8a; font-size:28px; margin:0; text-transform:uppercase;">Palyam Enterprises</h1>
+                    <p style="color:#666; font-size:14px; margin:5px 0 0 0;">Official Estimate / Quotation</p>
+                </div>
+                <div style="text-align:right;">
+                    <p style="margin:0; font-weight:bold; font-size:18px;" id="pdf-est-id"></p>
+                    <p style="margin:5px 0 0 0; color:#666;" id="pdf-date"></p>
+                </div>
+            </div>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:30px;">
+                <thead>
+                    <tr style="background:#f3f4f6;">
+                        <th style="padding:12px; text-align:left; border-bottom:2px solid #ddd;">Description</th>
+                        <th style="padding:12px; text-align:center; border-bottom:2px solid #ddd;">Qty</th>
+                        <th style="padding:12px; text-align:right; border-bottom:2px solid #ddd;">Unit Price</th>
+                        <th style="padding:12px; text-align:right; border-bottom:2px solid #ddd;">Line Total</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-table-body"></tbody>
+            </table>
+            <div style="width:50%; float:right;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr><td style="padding:8px; text-align:right;">Subtotal:</td><td style="padding:8px; text-align:right; font-weight:bold;" id="pdf-subtotal"></td></tr>
+                    <tr id="pdf-discount-row" style="color:red;"><td style="padding:8px; text-align:right;" id="pdf-discount-label">Discount:</td><td style="padding:8px; text-align:right; font-weight:bold;" id="pdf-discount-val"></td></tr>
+                    <tr style="background:#1e3a8a; color:white; font-size:18px;"><td style="padding:12px; text-align:right; font-weight:bold;">Grand Total:</td><td style="padding:12px; text-align:right; font-weight:bold;" id="pdf-total"></td></tr>
+                </table>
+            </div>
+            <div style="clear:both; padding-top:50px; font-size:12px; color:#888; text-align:center;">
+                <p>Thank you for your business! This is a system-generated estimate.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Set today's date in header
-        const options = { weekday: 'short', month: 'short', day: 'numeric' };
-        document.getElementById('header-date').innerText = new Date().toLocaleDateString('en-IN', options);
+        const formatMoney = (amt) => '₹' + parseFloat(amt).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+        const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        document.getElementById('header-date').innerText = dateStr;
 
-        // Formatting Utility
-        const formatMoney = (amt) => '₹' + parseInt(amt).toLocaleString('en-IN');
+        // --- STATE ---
+        let currentQuote = [];
+        let discount = { type: 'none', val: 0 }; // type: percent, flat, none
+        let historyLog = JSON.parse(localStorage.getItem('palyam_history')) || [];
 
-        // State Management
-        let currentQuote = []; 
+        // --- NAVIGATION ---
+        function switchTab(tab) {
+            ['view-estimator', 'view-history'].forEach(id => document.getElementById(id).classList.add('tab-hidden'));
+            ['nav-estimator', 'nav-history'].forEach(id => document.getElementById(id).className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all");
+            
+            document.getElementById(`view-${tab}`).classList.remove('tab-hidden');
+            const btn = document.getElementById(`nav-${tab}`);
+            btn.className = "flex-1 py-4 text-xs font-bold text-blue-400 border-t-2 border-blue-500 transition-all";
+            document.getElementById('header-subtitle').innerText = tab === 'estimator' ? 'Official Estimator' : 'Analytics & Log';
 
+            if(tab === 'history') renderHistory();
+        }
+
+        // --- ESTIMATOR LOGIC ---
         function addToQuote() {
-            const nameInput = document.getElementById('quote-item-name').value.trim();
-            const costInput = parseFloat(document.getElementById('quote-item-cost').value);
-            const qtyInput = parseInt(document.getElementById('quote-item-qty').value);
+            const name = document.getElementById('q-name').value.trim();
+            const cost = parseFloat(document.getElementById('q-cost').value) || 0;
+            const price = parseFloat(document.getElementById('q-price').value);
+            const qty = parseInt(document.getElementById('q-qty').value);
+
+            if (!name || isNaN(price) || isNaN(qty)) { alert("Description, Selling Price, and Qty are required."); return; }
+            if (price < cost) { alert("Warning: Selling price is lower than wholesale cost."); }
+
+            currentQuote.push({ id: Date.now(), name, cost, price, qty });
             
-            if (!nameInput) { alert("Please enter an item description."); return; }
-            if (isNaN(costInput) || costInput < 0) { alert("Please enter a valid price."); return; }
-            if (isNaN(qtyInput) || qtyInput <= 0) { alert("Please enter a valid quantity."); return; }
+            document.getElementById('q-name').value = '';
+            document.getElementById('q-cost').value = '';
+            document.getElementById('q-price').value = '';
+            document.getElementById('q-qty').value = '';
+            document.getElementById('q-name').focus();
             
-            currentQuote.push({
-                id: Date.now(),
-                name: nameInput,
-                cost: costInput,
-                qty: qtyInput
+            updateEngine();
+        }
+
+        function remove(id) { currentQuote = currentQuote.filter(i => i.id !== id); updateEngine(); }
+        function clearQuote() { if(confirm('Clear entire estimate?')) { currentQuote = []; discount = {type:'none', val:0}; updateEngine(); } }
+
+        function applyDiscount(type, val) {
+            if (type === 'flat') {
+                val = parseFloat(prompt("Enter flat discount amount (₹):", "0"));
+                if (isNaN(val) || val < 0) return;
+            }
+            discount = { type, val };
+            updateEngine();
+        }
+
+        // Calculates all math and updates UI
+        function updateEngine() {
+            let subtotal = 0; let totalCost = 0;
+            
+            // Build List UI
+            const list = document.getElementById('quote-list'); list.innerHTML = '';
+            if (currentQuote.length === 0) list.innerHTML = `<div class="text-center py-4 border border-dashed border-zinc-800 rounded-xl"><p class="text-xs text-zinc-600 italic">No items added yet.</p></div>`;
+            
+            currentQuote.forEach(item => {
+                const linePrice = item.price * item.qty;
+                subtotal += linePrice; totalCost += (item.cost * item.qty);
+                list.innerHTML += `
+                <div class="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                    <div class="space-y-1">
+                        <p class="text-sm font-semibold text-zinc-100">${item.name}</p>
+                        <p class="text-[11px] text-zinc-500 tracking-wide">${item.qty} units × ${formatMoney(item.price)}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <p class="text-sm font-bold text-zinc-200">${formatMoney(linePrice)}</p>
+                        <button onclick="remove(${item.id})" class="text-zinc-600 hover:text-red-400 font-bold px-2">×</button>
+                    </div>
+                </div>`;
             });
+
+            // Calculate Discount
+            let discountAmt = 0;
+            if (discount.type === 'percent') discountAmt = subtotal * (discount.val / 100);
+            if (discount.type === 'flat') discountAmt = discount.val;
             
-            // Clear inputs and refocus on name for rapid entry
-            document.getElementById('quote-item-name').value = '';
-            document.getElementById('quote-item-cost').value = '';
-            document.getElementById('quote-item-qty').value = '';
-            document.getElementById('quote-item-name').focus();
+            let grandTotal = subtotal - discountAmt;
+            if (grandTotal < 0) grandTotal = 0;
+
+            let expectedProfit = grandTotal - totalCost;
+            let profitMargin = grandTotal > 0 ? ((expectedProfit / grandTotal) * 100).toFixed(1) : 0;
+
+            // Update UI Numbers
+            document.getElementById('ui-subtotal').innerText = formatMoney(subtotal);
+            document.getElementById('ui-discount').innerText = `-${formatMoney(discountAmt)} ${discount.type==='percent' ? `(${discount.val}%)` : ''}`;
+            document.getElementById('ui-total').innerText = formatMoney(grandTotal);
             
-            renderQuoteUI();
+            const pElement = document.getElementById('ui-profit');
+            pElement.innerText = `${formatMoney(expectedProfit)} (${profitMargin}%)`;
+            pElement.className = expectedProfit >= 0 ? "font-mono text-emerald-400 font-bold" : "font-mono text-red-400 font-bold";
         }
 
-        function removeFromQuote(id) {
-            currentQuote = currentQuote.filter(i => i.id !== id);
-            renderQuoteUI();
+        // --- EXPORT & LOGGING ---
+        function getTotals() {
+            let subtotal = currentQuote.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            let cost = currentQuote.reduce((sum, i) => sum + (i.cost * i.qty), 0);
+            let dAmt = discount.type === 'percent' ? subtotal * (discount.val/100) : (discount.type === 'flat' ? discount.val : 0);
+            let total = subtotal - dAmt;
+            return { subtotal, cost, dAmt, total, profit: total - cost };
         }
 
-        function clearQuote() {
-            if(currentQuote.length === 0) return;
-            if(confirm('Clear the current estimate?')) {
-                currentQuote = [];
-                renderQuoteUI();
+        function saveToHistory(estId, totals) {
+            historyLog.unshift({ id: estId, date: new Date().toISOString(), total: totals.total, profit: totals.profit, items: currentQuote.length });
+            localStorage.setItem('palyam_history', JSON.stringify(historyLog));
+        }
+
+        function generateAction(method) {
+            if (currentQuote.length === 0) { alert("Add items first."); return; }
+            const estId = "EST-" + Math.floor(1000 + Math.random() * 9000);
+            const t = getTotals();
+            
+            // Log to analytics
+            saveToHistory(estId, t);
+
+            if (method === 'whatsapp') {
+                let phone = document.getElementById('q-phone').value.replace(/\D/g,'');
+                if (!phone.startsWith('91') && phone.length === 10) phone = '91' + phone;
+                
+                let msg = `*PALYAM ENTERPRISES*\n_Estimate ID: #${estId}_\n------------------------\n\n`;
+                currentQuote.forEach((i, idx) => { msg += `*${idx+1}. ${i.name}*\n${i.qty} x ${formatMoney(i.price)} = *${formatMoney(i.price*i.qty)}*\n\n`; });
+                msg += `------------------------\n*Subtotal: ${formatMoney(t.subtotal)}*\n`;
+                if(t.dAmt > 0) msg += `*Discount: -${formatMoney(t.dAmt)}*\n`;
+                msg += `*GRAND TOTAL: ${formatMoney(t.total)}*\n\n_Please reply to confirm._`;
+                
+                window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
+            } 
+            else if (method === 'pdf') {
+                // Populate PDF Template
+                document.getElementById('pdf-est-id').innerText = '#' + estId;
+                document.getElementById('pdf-date').innerText = new Date().toLocaleDateString('en-IN');
+                
+                let tbody = '';
+                currentQuote.forEach(i => {
+                    tbody += `<tr><td style="padding:12px; border-bottom:1px solid #eee;">${i.name}</td><td style="padding:12px; text-align:center; border-bottom:1px solid #eee;">${i.qty}</td><td style="padding:12px; text-align:right; border-bottom:1px solid #eee;">${formatMoney(i.price)}</td><td style="padding:12px; text-align:right; font-weight:bold; border-bottom:1px solid #eee;">${formatMoney(i.price*i.qty)}</td></tr>`;
+                });
+                document.getElementById('pdf-table-body').innerHTML = tbody;
+                document.getElementById('pdf-subtotal').innerText = formatMoney(t.subtotal);
+                
+                const dRow = document.getElementById('pdf-discount-row');
+                if(t.dAmt > 0) { dRow.style.display = 'table-row'; document.getElementById('pdf-discount-val').innerText = '-' + formatMoney(t.dAmt); } 
+                else { dRow.style.display = 'none'; }
+                
+                document.getElementById('pdf-total').innerText = formatMoney(t.total);
+
+                // Generate PDF
+                const element = document.getElementById('invoice-template');
+                const opt = { margin: 0, filename: `Estimate_${estId}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }};
+                html2pdf().set(opt).from(element).save();
             }
         }
 
-        function renderQuoteUI() {
-            const list = document.getElementById('quote-list');
-            list.innerHTML = '';
-            let grandTotal = 0;
+        // --- HISTORY LOGIC ---
+        function renderHistory() {
+            const list = document.getElementById('history-list'); list.innerHTML = '';
+            let todayRevenue = 0; let todayProfit = 0;
+            const todayStr = new Date().toISOString().split('T')[0];
 
-            if (currentQuote.length === 0) {
-                list.innerHTML = `<div class="text-center py-6 border border-dashed border-zinc-800 rounded-xl"><p class="text-xs text-zinc-600 italic">No items added yet.</p></div>`;
-            } else {
-                currentQuote.forEach((item, index) => {
-                    const lineTotal = item.cost * item.qty;
-                    grandTotal += lineTotal;
+            if (historyLog.length === 0) { list.innerHTML = `<p class="text-center text-xs text-zinc-600 py-6">No estimates logged yet.</p>`; }
+            else {
+                historyLog.forEach(log => {
+                    const logDate = new Date(log.date);
+                    if (logDate.toISOString().split('T')[0] === todayStr) { todayRevenue += log.total; todayProfit += log.profit; }
                     
                     list.innerHTML += `
-                    <div class="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-800 relative group">
-                        <div class="space-y-1">
-                            <p class="text-sm font-semibold text-zinc-100">${item.name}</p>
-                            <p class="text-[11px] text-zinc-500 tracking-wide">${item.qty} units × ${formatMoney(item.cost)}</p>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-zinc-100">#${log.id}</p>
+                            <p class="text-[10px] text-zinc-500">${logDate.toLocaleDateString()} • ${log.items} items</p>
                         </div>
-                        <div class="flex items-center gap-4">
-                            <p class="text-sm font-bold text-zinc-200">${formatMoney(lineTotal)}</p>
-                            <button onclick="removeFromQuote(${item.id})" class="text-zinc-600 hover:text-red-400 font-bold p-1 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+                        <div class="text-right">
+                            <p class="text-sm font-black text-blue-400">${formatMoney(log.total)}</p>
+                            <p class="text-[10px] ${log.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}">Margin: ${formatMoney(log.profit)}</p>
                         </div>
                     </div>`;
                 });
             }
-            
-            document.getElementById('quote-total').innerText = formatMoney(grandTotal);
+            document.getElementById('kpi-sales').innerText = formatMoney(todayRevenue); document.getElementById('kpi-profit').innerText = formatMoney(todayProfit);
         }
 
-        function sendQuoteWhatsApp() {
-            if (currentQuote.length === 0) {
-                alert("Please add items to the estimate before sending.");
-                return;
-            }
+        function clearHistory() { if(confirm("Erase all history?")) { historyLog = []; localStorage.removeItem('palyam_history'); renderHistory(); } }
 
-            let phone = document.getElementById('quote-customer-phone').value.replace(/\D/g,''); // Strip non-numbers
-            if (!phone || phone.length < 10) {
-                alert("Please enter a valid 10-digit WhatsApp number.");
-                return;
-            }
-
-            // Generate a random 4-digit Estimate ID
-            const estId = Math.floor(1000 + Math.random() * 9000);
-            const dateStr = new Date().toLocaleDateString('en-IN');
-
-            let message = `*PALYAM ENTERPRISES*\n_Hardware & Supply Estimate_\n`;
-            message += `Est ID: #EST-${estId}\nDate: ${dateStr}\n------------------------\n\n`;
-            
-            let grandTotal = 0;
-            currentQuote.forEach((item, index) => {
-                const lineTotal = item.cost * item.qty;
-                grandTotal += lineTotal;
-                message += `*${index + 1}. ${item.name}*\n`;
-                message += `${item.qty} x ${formatMoney(item.cost)} = *${formatMoney(lineTotal)}*\n\n`;
-            });
-            
-            message += `------------------------\n`;
-            message += `*GRAND TOTAL: ${formatMoney(grandTotal)}*\n\n`;
-            message += `_This is a digitally generated estimate. Please reply to this message to confirm your order._`;
-
-            // Format phone for India code if not present
-            if (!phone.startsWith('91') && phone.length === 10) phone = '91' + phone;
-
-            window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
-        }
-
-        // Initialize empty state
-        window.onload = renderQuoteUI;
+        // Boot
+        updateEngine();
     </script>
 </body>
 </html>
