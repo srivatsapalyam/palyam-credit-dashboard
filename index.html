@@ -9,6 +9,8 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
         .tab-hidden { display: none !important; }
+        /* Forces the calendar picker icon to match the dark theme */
+        input[type="date"] { color-scheme: dark; }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-50 font-sans antialiased min-h-screen relative pb-24">
@@ -41,7 +43,7 @@
             <section class="space-y-3">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Contractor Ledger</h2>
-                    <button onclick="openModal('credit-modal')" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
+                    <button onclick="openCreditModal()" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
                         + Add Client
                     </button>
                 </div>
@@ -91,15 +93,15 @@
                 <div><label class="text-xs text-zinc-400">Business Name</label><input type="text" id="c-name" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="text-xs text-zinc-400">Amount (₹)</label><input type="number" id="c-amount" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
-                    <div><label class="text-xs text-zinc-400">Days Pending</label><input type="number" id="c-days" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
+                    <div><label class="text-xs text-zinc-400">Date of Purchase</label><input type="date" id="c-date" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="text-xs text-zinc-400">Limit (₹)</label><input type="number" id="c-limit" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
                     <div><label class="text-xs text-zinc-400">Phone No.</label><input type="tel" id="c-phone" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"></div>
                 </div>
                 <div class="flex gap-3 pt-3">
-                    <button type="button" onclick="closeModal('credit-modal')" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold">Cancel</button>
-                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold">Save</button>
+                    <button type="button" onclick="closeModal('credit-modal')" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold hover:bg-zinc-800">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold hover:bg-zinc-200">Save Account</button>
                 </div>
             </form>
         </div>
@@ -130,8 +132,24 @@
     </div>
 
     <script>
-        // Formatting Utility
+        // Formatting & Date Utilities
         const formatMoney = (amt) => '₹' + parseInt(amt).toLocaleString('en-IN');
+        
+        // This calculates the exact number of days between the purchase date and today
+        function calculateDaysPending(dateString) {
+            const purchaseDate = new Date(dateString);
+            const today = new Date();
+            purchaseDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+            const diffTime = today - purchaseDate;
+            return diffTime < 0 ? 0 : Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // Returns today's date formatted for the HTML input (YYYY-MM-DD)
+        function getTodayString() {
+            const today = new Date();
+            return today.toISOString().split('T')[0];
+        }
 
         // ================= TAB NAVIGATION =================
         function switchTab(tab) {
@@ -154,6 +172,11 @@
         // ================= MODAL CONTROLS =================
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function openCreditModal() {
+            document.getElementById('c-date').value = getTodayString(); // Auto-fill today's date
+            openModal('credit-modal');
+        }
 
         // ================= DATA LOADING (ROBUST) =================
         let creditData = [];
@@ -185,13 +208,19 @@
             if (creditData.length === 0) {
                 list.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No accounts found. Click '+ Add Client' to begin.</div>`;
             } else {
-                creditData.forEach(item => {
+                // Sort by oldest debt first
+                creditData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(item => {
+                    const daysPending = calculateDaysPending(item.date);
+                    
                     total += parseInt(item.amount);
-                    totalDays += parseInt(item.days);
+                    totalDays += daysPending;
                     
                     let status = "Current"; let color = "text-zinc-400 bg-zinc-900 border-zinc-800";
-                    if (item.amount >= item.limit || item.days >= 30) { status = "Critical"; color = "text-red-400 bg-red-950/30 border-red-900/50"; }
-                    else if (item.days >= 15) { status = "Overdue"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; }
+                    if (item.amount >= item.limit || daysPending >= 30) { status = "Critical"; color = "text-red-400 bg-red-950/30 border-red-900/50"; }
+                    else if (daysPending >= 15) { status = "Overdue"; color = "text-amber-400 bg-amber-950/30 border-amber-900/50"; }
+
+                    // Format the display date nicely (e.g., Jun 13)
+                    const displayDate = new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
                     list.innerHTML += `
                     <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3 relative">
@@ -199,7 +228,7 @@
                         <div class="flex justify-between items-start pr-8">
                             <div>
                                 <h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3>
-                                <p class="text-xs text-zinc-500">${item.days} days pending</p>
+                                <p class="text-xs text-zinc-500">${daysPending} days pending <span class="text-zinc-700 mx-1">•</span> <span class="text-zinc-600">${displayDate}</span></p>
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-bold text-zinc-200">${formatMoney(item.amount)}</p>
@@ -207,7 +236,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2 pt-2 border-t border-zinc-800">
-                            <button onclick="pingWhatsApp('${item.phone}', 'Reminder: ₹${item.amount} pending for ${item.days} days.')" class="flex-1 bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">Ping WhatsApp</button>
+                            <button onclick="pingWhatsApp('${item.phone}', 'Reminder: ₹${item.amount} from your purchase on ${displayDate} has been pending for ${daysPending} days.')" class="flex-1 bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded hover:bg-zinc-200">Ping WhatsApp</button>
                         </div>
                     </div>`;
                 });
@@ -223,7 +252,7 @@
                 id: Date.now(),
                 name: document.getElementById('c-name').value,
                 amount: document.getElementById('c-amount').value,
-                days: document.getElementById('c-days').value,
+                date: document.getElementById('c-date').value, // Now saving the specific date
                 limit: document.getElementById('c-limit').value,
                 phone: document.getElementById('c-phone').value
             });
