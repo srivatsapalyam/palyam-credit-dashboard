@@ -3,299 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palyam Enterprises - Credit Action Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Palyam Enterprises - Mobile Command</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Minimalist scrollbar for a clean executive look */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        /* Hide sections dynamically */
+        .tab-hidden { display: none !important; }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-50 font-sans antialiased min-h-screen pb-12">
+<body class="bg-zinc-950 text-zinc-50 font-sans antialiased h-screen flex flex-col overflow-hidden">
 
-    <header class="border-b border-zinc-800 bg-zinc-900/50 sticky top-0 backdrop-blur-md z-10 px-4 py-4">
+    <header class="border-b border-zinc-800 bg-zinc-900/90 backdrop-blur-md px-4 py-4 shrink-0">
         <div class="max-w-md mx-auto flex justify-between items-center">
             <div>
                 <h1 class="text-sm font-bold tracking-wider uppercase text-zinc-400">Palyam Enterprises</h1>
-                <p class="text-xs text-zinc-500">Receivables & Credit Ledger</p>
+                <p id="header-subtitle" class="text-xs text-zinc-500">Receivables & Credit</p>
             </div>
-            <span class="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                Live Pulse
-            </span>
+            <button onclick="window.location.reload()" class="inline-flex items-center rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-300 border border-zinc-700">
+                ↻ Sync
+            </button>
         </div>
     </header>
 
-    <main class="max-w-md mx-auto px-4 mt-6 space-y-6">
-
-        <section class="grid grid-cols-2 gap-3">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Total Outstanding</p>
-                <p class="text-xl font-bold tracking-tight mt-1 text-zinc-100" id="kpi-total">₹0</p>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Avg DSO</p>
-                <p class="text-xl font-bold tracking-tight mt-1 text-zinc-100" id="kpi-dso">0 Days</p>
-            </div>
-        </section>
-
-        <section class="space-y-2">
-            <label class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Filter Risk Level</label>
-            <div class="flex gap-2">
-                <button onclick="filterContractors('all')" id="btn-all" class="flex-1 text-xs py-2 px-3 rounded-md font-medium border bg-zinc-100 border-zinc-100 text-zinc-950 transition-all">
-                    All
-                </button>
-                <button onclick="filterContractors('Overdue')" id="btn-overdue" class="flex-1 text-xs py-2 px-3 rounded-md font-medium border border-zinc-800 bg-zinc-900 text-zinc-400 transition-all">
-                    Overdue
-                </button>
-                <button onclick="filterContractors('Critical')" id="btn-critical" class="flex-1 text-xs py-2 px-3 rounded-md font-medium border border-zinc-800 bg-zinc-900 text-zinc-400 transition-all">
-                    Critical
-                </button>
-            </div>
-        </section>
-
-        <section class="space-y-3">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Contractor Accounts</h2>
-                <button onclick="openModal()" class="bg-zinc-100 text-zinc-950 text-xs font-bold py-1 px-3 rounded flex items-center gap-1 hover:bg-zinc-200">
-                    + Add
-                </button>
-            </div>
-            
-            <div id="contractor-list" class="space-y-2.5">
+    <main class="flex-1 overflow-y-auto pb-20">
+        
+        <div id="view-receivables" class="max-w-md mx-auto px-4 mt-6 space-y-6">
+            <section class="grid grid-cols-2 gap-3">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Total Outstanding</p>
+                    <p class="text-xl font-bold mt-1 text-zinc-100" id="kpi-total">₹1,45,000</p>
                 </div>
-        </section>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Avg DSO</p>
+                    <p class="text-xl font-bold mt-1 text-zinc-100">24 Days</p>
+                </div>
+            </section>
+            
+            <section class="space-y-3">
+                <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Critical Accounts</h2>
+                <div class="space-y-2.5">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-semibold text-zinc-100">Srivatsa Builders</h3>
+                            <p class="text-xs text-zinc-500">32 days outstanding</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-zinc-200">₹45,000</p>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-red-400 bg-red-950/30 border-red-900/50">Critical</span>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-semibold text-zinc-100">Kushalnagar Const.</h3>
+                            <p class="text-xs text-zinc-500">46 days outstanding</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-zinc-200">₹28,000</p>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-amber-400 bg-amber-950/30 border-amber-900/50">Overdue</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
+        <div id="view-inventory" class="max-w-md mx-auto px-4 mt-6 space-y-6 tab-hidden">
+            <section class="grid grid-cols-2 gap-3">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Stock Alerts</p>
+                    <p class="text-xl font-bold mt-1 text-red-400">3 Items</p>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                    <p class="text-xs font-medium text-zinc-400 uppercase tracking-tight">Dead Stock Cap.</p>
+                    <p class="text-xl font-bold mt-1 text-zinc-100">₹85K</p>
+                </div>
+            </section>
+            
+            <section class="space-y-3">
+                <h2 class="text-xs font-semibold tracking-wider uppercase text-zinc-400">Reorder Action List</h2>
+                <div class="space-y-2.5">
+                    
+                    <div class="bg-zinc-900 border border-red-900/50 rounded-lg p-4 space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-sm font-semibold text-zinc-100">Bosch Masonry Drill 8mm</h3>
+                                <p class="text-xs text-zinc-500 mt-0.5">Supplier: Bangalore Tools Hub</p>
+                            </div>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-red-400 bg-red-950/30 border-red-900/50">Out of Stock</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded">
+                            <span>Current: 0</span>
+                            <span>Reorder Pt: 10</span>
+                        </div>
+                        <button onclick="pingSupplier('Bangalore Tools Hub', 'Bosch Masonry Drill 8mm')" class="w-full bg-zinc-100 text-zinc-950 text-xs font-bold py-2 rounded flex justify-center items-center gap-2">
+                            WhatsApp Supplier
+                        </button>
+                    </div>
+
+                    <div class="bg-zinc-900 border border-amber-900/50 rounded-lg p-4 space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-sm font-semibold text-zinc-100">Asian Paints Apex 20L</h3>
+                                <p class="text-xs text-zinc-500 mt-0.5">Supplier: Mysore Paints Dist</p>
+                            </div>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border text-amber-400 bg-amber-950/30 border-amber-900/50">Low Stock</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded">
+                            <span>Current: 2</span>
+                            <span>Reorder Pt: 5</span>
+                        </div>
+                        <button onclick="pingSupplier('Mysore Paints Dist', 'Asian Paints Apex 20L White')" class="w-full border border-zinc-700 text-zinc-300 text-xs font-bold py-2 rounded hover:bg-zinc-800 transition">
+                            Draft Reorder Email
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+        </div>
     </main>
 
-    <div id="add-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center px-4">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-md p-5 space-y-4">
-            <h3 class="text-lg font-bold text-zinc-100 border-b border-zinc-800 pb-2">Add New Credit Account</h3>
-            
-            <form id="add-form" onsubmit="addContractor(event)" class="space-y-3">
-                <div>
-                    <label class="text-xs text-zinc-400">Contractor / Business Name</label>
-                    <input type="text" id="form-name" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-xs text-zinc-400">Amount Owed (₹)</label>
-                        <input type="number" id="form-amount" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
-                    </div>
-                    <div>
-                        <label class="text-xs text-zinc-400">Days Pending</label>
-                        <input type="number" id="form-days" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-xs text-zinc-400">Credit Limit (₹)</label>
-                        <input type="number" id="form-limit" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
-                    </div>
-                    <div>
-                        <label class="text-xs text-zinc-400">Phone Number</label>
-                        <input type="tel" id="form-phone" required class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500">
-                    </div>
-                </div>
-                
-                <div class="flex gap-3 pt-3">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-2 rounded border border-zinc-700 text-zinc-300 text-sm font-semibold">Cancel</button>
-                    <button type="submit" class="flex-1 py-2 rounded bg-zinc-100 text-zinc-950 text-sm font-bold">Save Account</button>
-                </div>
-            </form>
+    <nav class="fixed bottom-0 w-full bg-zinc-950 border-t border-zinc-800 pb-safe">
+        <div class="max-w-md mx-auto flex justify-around">
+            <button onclick="switchTab('receivables')" id="nav-receivables" class="flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all">
+                💰 Credit
+            </button>
+            <button onclick="switchTab('inventory')" id="nav-inventory" class="flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent hover:text-zinc-300 transition-all">
+                📦 Inventory
+            </button>
         </div>
-    </div>
+    </nav>
 
     <script>
-        // Default data if the app is opened for the very first time
-        const defaultContractors = [
-            { id: 1, name: "Srivatsa Builders", outstanding: 45000, agingDays: 32, creditLimit: 50000, status: "Overdue", phone: "919876543210" },
-            { id: 2, name: "Ramesh Plumbing", outstanding: 12000, agingDays: 15, creditLimit: 20000, status: "Current", phone: "919876543211" },
-            { id: 3, name: "Kushalnagar Constructions", outstanding: 28000, agingDays: 46, creditLimit: 30000, status: "Critical", phone: "919876543212" },
-            { id: 4, name: "Hardik Electricals", outstanding: 35000, agingDays: 8, creditLimit: 40000, status: "Current", phone: "919876543213" },
-            { id: 5, name: "Bhoomi Enterprises", outstanding: 25000, agingDays: 22, creditLimit: 25000, status: "Critical", phone: "919876543214" }
-        ];
-
-        // LOAD DATA from phone memory (localStorage), or use defaults
-        let contractors = JSON.parse(localStorage.getItem('palyam_contractors')) || defaultContractors;
-
-        let currentFilter = 'all';
-        let expandedId = null;
-
-        // SAVE DATA to phone memory
-        function saveContractors() {
-            localStorage.setItem('palyam_contractors', JSON.stringify(contractors));
-        }
-
-        // Formats financial numbers
-        function formatCurrency(amount) {
-            return '₹' + amount.toLocaleString('en-IN');
-        }
-
-        // Calculates metrics dynamically
-        function updateKPIs() {
-            const total = contractors.reduce((sum, item) => sum + item.outstanding, 0);
-            const avgDso = contractors.length > 0 ? Math.round(contractors.reduce((sum, item) => sum + item.agingDays, 0) / contractors.length) : 0;
+        function switchTab(tabName) {
+            // Hide all views
+            document.getElementById('view-receivables').classList.add('tab-hidden');
+            document.getElementById('view-inventory').classList.add('tab-hidden');
             
-            document.getElementById('kpi-total').innerText = formatCurrency(total);
-            document.getElementById('kpi-dso').innerText = `${avgDso} Days`;
+            // Reset nav styles
+            document.getElementById('nav-receivables').className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all";
+            document.getElementById('nav-inventory').className = "flex-1 py-4 text-xs font-bold text-zinc-500 border-t-2 border-transparent transition-all";
+
+            // Activate selected view and nav
+            if (tabName === 'receivables') {
+                document.getElementById('view-receivables').classList.remove('tab-hidden');
+                document.getElementById('nav-receivables').className = "flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all";
+                document.getElementById('header-subtitle').innerText = "Receivables & Credit";
+            } else if (tabName === 'inventory') {
+                document.getElementById('view-inventory').classList.remove('tab-hidden');
+                document.getElementById('nav-inventory').className = "flex-1 py-4 text-xs font-bold text-zinc-100 border-t-2 border-zinc-100 transition-all";
+                document.getElementById('header-subtitle').innerText = "Supply & Stock Alerts";
+            }
         }
 
-        function toggleExpand(id) {
-            expandedId = expandedId === id ? null : id;
-            renderList();
-        }
-
-        function filterContractors(filterType) {
-            currentFilter = filterType;
-            ['all', 'overdue', 'critical'].forEach(type => {
-                const btn = document.getElementById(`btn-${type}`);
-                if (type === filterType.toLowerCase()) {
-                    btn.className = "flex-1 text-xs py-2 px-3 rounded-md font-medium border bg-zinc-100 border-zinc-100 text-zinc-950 transition-all";
-                } else {
-                    btn.className = "flex-1 text-xs py-2 px-3 rounded-md font-medium border border-zinc-800 bg-zinc-900 text-zinc-400 transition-all";
-                }
-            });
-            renderList();
-        }
-
-        // WhatsApp Reminder Trigger
-        function sendReminder(name, amount, days, phone, event) {
-            event.stopPropagation();
-            const text = `Dear ${name}, a friendly reminder from Palyam Enterprises. Your account has an outstanding balance of ₹${amount.toLocaleString('en-IN')} pending for ${days} days. Please clear the receivables at your earliest convenience. Thank you.`;
-            const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
+        function pingSupplier(distributor, item) {
+            const text = `Hello ${distributor}, Palyam Enterprises here. We need to place an urgent restock order for: ${item}. Please confirm current pricing and dispatch time.`;
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
             window.open(whatsappUrl, '_blank');
         }
-
-        // Clear Balance & Save
-        function logCollection(id, event) {
-            event.stopPropagation();
-            contractors = contractors.filter(item => item.id !== id);
-            if (expandedId === id) expandedId = null;
-            saveContractors(); // Save the removal to memory
-            updateKPIs();
-            renderList();
-        }
-
-        // Modal Controls
-        function openModal() {
-            document.getElementById('add-modal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('add-modal').classList.add('hidden');
-            document.getElementById('add-form').reset();
-        }
-
-        // Add New Contractor Logic
-        function addContractor(event) {
-            event.preventDefault(); // Prevent page reload
-
-            const name = document.getElementById('form-name').value;
-            const outstanding = parseFloat(document.getElementById('form-amount').value);
-            const agingDays = parseInt(document.getElementById('form-days').value);
-            const creditLimit = parseFloat(document.getElementById('form-limit').value);
-            let phone = document.getElementById('form-phone').value;
-
-            // Basic phone format fix (ensures country code exists for WhatsApp)
-            if (!phone.startsWith('91') && phone.length === 10) phone = '91' + phone;
-
-            // Auto-calculate risk status based on strict rules
-            let status = "Current";
-            if (outstanding >= creditLimit || agingDays >= 30) {
-                status = "Critical";
-            } else if (agingDays >= 15) {
-                status = "Overdue";
-            }
-
-            const newAccount = {
-                id: Date.now(), // Unique ID based on timestamp
-                name: name,
-                outstanding: outstanding,
-                agingDays: agingDays,
-                creditLimit: creditLimit,
-                status: status,
-                phone: phone
-            };
-
-            contractors.unshift(newAccount); // Add to the top of the list
-            saveContractors(); // Save to phone memory
-
-            closeModal();
-            updateKPIs();
-            renderList();
-        }
-
-        // Builds the DOM rows dynamically
-        function renderList() {
-            const container = document.getElementById('contractor-list');
-            container.innerHTML = '';
-
-            const filtered = contractors.filter(item => {
-                if (currentFilter === 'all') return true;
-                return item.status.toLowerCase() === currentFilter.toLowerCase();
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">No accounts found.</div>`;
-                return;
-            }
-
-            filtered.forEach(item => {
-                const isExpanded = item.id === expandedId;
-                const utilizationPct = Math.min(100, Math.round((item.outstanding / item.creditLimit) * 100));
-                
-                let statusBadgeColor = "text-zinc-400 bg-zinc-900 border-zinc-800";
-                if (item.status === "Critical") statusBadgeColor = "text-red-400 bg-red-950/30 border-red-900/50";
-                if (item.status === "Overdue") statusBadgeColor = "text-amber-400 bg-amber-950/30 border-amber-900/50";
-
-                const row = document.createElement('div');
-                row.className = `bg-zinc-900 border ${isExpanded ? 'border-zinc-400' : 'border-zinc-800'} rounded-lg transition-all cursor-pointer overflow-hidden`;
-                row.onclick = () => toggleExpand(item.id);
-
-                row.innerHTML = `
-                    <div class="p-4 flex justify-between items-center">
-                        <div class="space-y-1">
-                            <h3 class="text-sm font-semibold text-zinc-100">${item.name}</h3>
-                            <p class="text-xs text-zinc-500">${item.agingDays} days outstanding</p>
-                        </div>
-                        <div class="text-right space-y-1">
-                            <p class="text-sm font-bold tracking-tight text-zinc-200">${formatCurrency(item.outstanding)}</p>
-                            <span class="inline-block text-[10px] font-mono font-medium px-2 py-0.5 rounded border ${statusBadgeColor}">
-                                ${item.status}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    ${isExpanded ? `
-                        <div class="px-4 pb-4 pt-2 border-t border-zinc-800/60 bg-zinc-950/40 space-y-4">
-                            <div class="space-y-1.5">
-                                <div class="flex justify-between text-xs font-mono">
-                                    <span class="text-zinc-500">Credit Bound: ${utilizationPct}%</span>
-                                    <span class="text-zinc-400">Limit: ${formatCurrency(item.creditLimit)}</span>
-                                </div>
-                                <div class="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
-                                    <div class="h-full ${item.status === 'Critical' ? 'bg-red-500' : 'bg-amber-500'}" style="width: ${utilizationPct}%"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="flex gap-2">
-                                <button onclick="sendReminder('${item.name}', ${item.outstanding}, ${item.agingDays}, '${item.phone}', event)" class="flex-1 bg-zinc-100 text-zinc-950 text-xs font-semibold py-2 px-3 rounded-md hover:bg-zinc-200 transition-colors flex justify-center items-center gap-1.5">
-                                    Ping WhatsApp
-                                </button>
-                                <button onclick="logCollection(${item.id}, event)" class="flex-1 border border-zinc-800 text-zinc-400 text-xs font-semibold py-2 px-3 rounded-md hover:bg-zinc-900 transition-colors">
-                                    Clear Balance
-                                </button>
-                            </div>
-                        </div>
-                    ` : ''}
-                `;
-                container.appendChild(row);
-            });
-        }
-
-        // Initialize app
-        updateKPIs();
-        renderList();
     </script>
 </body>
 </html>
